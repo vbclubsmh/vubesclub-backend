@@ -1,0 +1,3731 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Vubes Club · Mobil API taslağı",
+    "version": "0.1.0",
+    "description": "13 SwiftUI ekranının veri ve işlem ihtiyaçları. Sağlayıcı webhook sözleşmesi ayrı entegrasyon sınırıdır."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/auth/otp-challenges": {
+      "post": {
+        "tags": [
+          "Erişim"
+        ],
+        "operationId": "createOtpChallenge",
+        "summary": "Giriş veya davet için SMS doğrulamasını başlat.",
+        "security": [],
+        "x-access": "public",
+        "responses": {
+          "202": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Challenge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Alan veya iş kuralı geçersiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Deneme sınırı aşıldı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Saniye"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChallengeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/otp-challenges/{challengeId}/resend": {
+      "post": {
+        "tags": [
+          "Erişim"
+        ],
+        "operationId": "resendOtp",
+        "summary": "Yeni kod gönder, önceki kodu geçersiz kıl.",
+        "security": [],
+        "x-access": "public",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Challenge"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Deneme sınırı aşıldı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Saniye"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "challengeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/auth/otp-challenges/{challengeId}/verify": {
+      "post": {
+        "tags": [
+          "Erişim"
+        ],
+        "operationId": "verifyOtp",
+        "summary": "GSM doğrulamasından sonra oturumu ve uygun yönlendirmeyi ver.",
+        "security": [],
+        "x-access": "public",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Verification"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Süre doldu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Alan veya iş kuralı geçersiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Deneme sınırı aşıldı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Saniye"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "challengeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/session": {
+      "get": {
+        "tags": [
+          "Erişim"
+        ],
+        "operationId": "getSession",
+        "summary": "Saklı oturumla güncel üyelik kararını oku.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "session",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Erişim"
+        ],
+        "operationId": "signOut",
+        "summary": "Aktif mobil oturumu sunucuda kapat.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "session",
+        "responses": {
+          "204": {
+            "description": "Başarılı."
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/session/refresh": {
+      "post": {
+        "tags": [
+          "Erişim"
+        ],
+        "operationId": "refreshSession",
+        "summary": "Mutlak oturum süresini uzatmadan belirteçleri yenile.",
+        "security": [],
+        "x-access": "refresh",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tokens"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/event-filters": {
+      "get": {
+        "tags": [
+          "Katalog"
+        ],
+        "operationId": "getEventFilters",
+        "summary": "Events ve Explore için spor ve seviye seçeneklerini getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Filters"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "tags": [
+          "Katalog"
+        ],
+        "operationId": "listEvents",
+        "summary": "Yayımlanmış yaklaşan etkinlikleri sırala. total filtrelenmiş toplamdır.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sport",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ana spor kodu"
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Level"
+            },
+            "description": "Genel seviye"
+          },
+          {
+            "name": "savedOnly",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Varsayılan false"
+          },
+          {
+            "name": "hasLocation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Explore için true"
+          },
+          {
+            "name": "bbox",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Batı,güney,doğu,kuzey sıralı ondalık dereceler"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Önceki sayfanın opak imleci"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Sayfa boyutu"
+          }
+        ]
+      }
+    },
+    "/events/{eventId}": {
+      "get": {
+        "tags": [
+          "Katalog"
+        ],
+        "operationId": "getEvent",
+        "summary": "Onaylı program, PT kartı ve üyeye açık işlemleri getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "bookingId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Katılımlarım bağlamında, üyeye ait kesin kaydın kabul ettiği etkinlik sürümü."
+          }
+        ]
+      }
+    },
+    "/me/saved-events/{eventId}": {
+      "put": {
+        "tags": [
+          "Katalog"
+        ],
+        "operationId": "saveEvent",
+        "summary": "Etkinliği kaydet. Mevcut ilişki aynı sonucu verir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "204": {
+            "description": "Başarılı."
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Katalog"
+        ],
+        "operationId": "unsaveEvent",
+        "summary": "Etkinliği kaydedilenlerden çıkar. İlişki zaten yoksa işlem başarılıdır.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "204": {
+            "description": "Başarılı."
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/booking-holds": {
+      "post": {
+        "tags": [
+          "Katılım"
+        ],
+        "operationId": "createBookingHold",
+        "summary": "Bir kişilik kontenjanı atomik ayır. Aktif denemenin süresi sabittir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "201": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hold"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Daha önce başlatılmış aynı işlem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hold"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Alan veya iş kuralı geçersiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Aynı kullanıcı eyleminin ağ tekrarlarında aynı anahtar."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHold"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/booking-holds/{holdId}": {
+      "get": {
+        "tags": [
+          "Katılım"
+        ],
+        "operationId": "getBookingHold",
+        "summary": "Üyenin kendi ödeme sürecinin durumunu ve kesinleşen katılım kimliğini getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hold"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/booking-holds/{holdId}/payments": {
+      "post": {
+        "tags": [
+          "Katılım"
+        ],
+        "operationId": "startPayment",
+        "summary": "Sunucudaki fiyat ve koşul sürümüyle ödemeyi başlat.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "201": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Daha önce başlatılmış aynı işlem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Süre doldu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Alan veya iş kuralı geçersiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sağlayıcı geçici olarak kullanılamıyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Aynı kullanıcı eyleminin ağ tekrarlarında aynı anahtar."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartPayment"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/bookings": {
+      "get": {
+        "tags": [
+          "Katılım"
+        ],
+        "operationId": "listMyBookings",
+        "summary": "Kendi katılımlarını zaman grubuna göre getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "inProgress",
+                "past"
+              ]
+            },
+            "description": "Etkinliğin zaman grubu"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Önceki sayfanın opak imleci"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Sayfa boyutu"
+          }
+        ]
+      }
+    },
+    "/me/bookings/{bookingId}/pass": {
+      "get": {
+        "tags": [
+          "Katılım"
+        ],
+        "operationId": "getEventPass",
+        "summary": "Uygun kesin katılım için doğrulanabilir kartı getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pass"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/club/trainers": {
+      "get": {
+        "tags": [
+          "Club"
+        ],
+        "operationId": "listClubTrainers",
+        "summary": "Üyeye açık PT dizinini veya takip edilenleri getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainerPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "followingOnly",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Varsayılan false"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Önceki sayfanın opak imleci"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Sayfa boyutu"
+          }
+        ]
+      }
+    },
+    "/club/trainers/{trainerId}": {
+      "get": {
+        "tags": [
+          "Club"
+        ],
+        "operationId": "getClubTrainer",
+        "summary": "Seçili PT, görünür ekip ve etkinliklerini getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainerDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "trainerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/me/followed-trainers/{trainerId}": {
+      "put": {
+        "tags": [
+          "Club"
+        ],
+        "operationId": "followTrainer",
+        "summary": "Görünür PT için sosyal takip ilişkisi oluştur.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "204": {
+            "description": "Başarılı."
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "trainerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Club"
+        ],
+        "operationId": "unfollowTrainer",
+        "summary": "Üyenin bu PT için takibini kaldır.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "204": {
+            "description": "Başarılı."
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "trainerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/me/trainer-introductions/{trainerId}": {
+      "put": {
+        "tags": [
+          "Club"
+        ],
+        "operationId": "requestIntroduction",
+        "summary": "Tanışma talebini oluştur veya mevcut talebi döndür.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Introduction"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "trainerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/events/{eventId}/me/rating": {
+      "put": {
+        "tags": [
+          "Club"
+        ],
+        "operationId": "rateEvent",
+        "summary": "İzinli fiilî katılımcının 1–5 yıldız oyunu güncelle.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Alan veya iş kuralı geçersiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{eventId}/activity-map": {
+      "get": {
+        "tags": [
+          "Canlı harita"
+        ],
+        "operationId": "getActivityMap",
+        "summary": "Yetkili üyeye rota ve güncel paylaşımı olan kişileri getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityMap"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/events/{eventId}/me/location-sharing": {
+      "put": {
+        "tags": [
+          "Canlı harita"
+        ],
+        "operationId": "setLocationSharing",
+        "summary": "Etkinlik için kişisel konum paylaşımını aç veya kapat. Üretim genişletmesi.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sharing"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{eventId}/me/location": {
+      "put": {
+        "tags": [
+          "Canlı harita"
+        ],
+        "operationId": "updateMyLocation",
+        "summary": "Açık paylaşım için son ölçümü güncelle. Üretim genişletmesi.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "204": {
+            "description": "Başarılı."
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Alan veya iş kuralı geçersiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Deneme sınırı aşıldı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Saniye"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationUpdate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "Profil"
+        ],
+        "operationId": "getMyProfile",
+        "summary": "Profil ve hesap ayarları panelini besle.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/privacy": {
+      "get": {
+        "tags": [
+          "Profil"
+        ],
+        "operationId": "getMyPrivacy",
+        "summary": "Kendi gizlilik özetini getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Privacy"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app/appearance": {
+      "get": {
+        "operationId": "getAppAppearance",
+        "summary": "Public images for the welcome and application surfaces",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Application images",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppAppearance"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "Instant": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "Url": {
+        "type": "string",
+        "format": "uri-reference",
+        "description": "An origin-relative API resource path or an absolute HTTPS URL."
+      },
+      "Membership": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "active",
+          "rejected",
+          "suspended"
+        ]
+      },
+      "Destination": {
+        "type": "string",
+        "enum": [
+          "events",
+          "review",
+          "applicationClosed",
+          "restricted"
+        ]
+      },
+      "Level": {
+        "type": "string",
+        "enum": [
+          "easy",
+          "moderate",
+          "hard"
+        ]
+      },
+      "Phase": {
+        "type": "string",
+        "enum": [
+          "upcoming",
+          "inProgress",
+          "past",
+          "cancelled"
+        ]
+      },
+      "Action": {
+        "type": "string",
+        "enum": [
+          "join",
+          "resumeCheckout",
+          "viewPass",
+          "none"
+        ]
+      },
+      "HoldState": {
+        "type": "string",
+        "enum": [
+          "reserved",
+          "paymentPending",
+          "verificationPending",
+          "confirmed",
+          "expired",
+          "paymentFailed",
+          "refundPending",
+          "refunded"
+        ]
+      },
+      "PaymentState": {
+        "type": "string",
+        "enum": [
+          "requiresAction",
+          "processing",
+          "succeeded",
+          "failed",
+          "refundPending",
+          "refunded"
+        ]
+      },
+      "Attendance": {
+        "type": "string",
+        "enum": [
+          "unrecorded",
+          "checkedIn",
+          "attended",
+          "noShow"
+        ]
+      },
+      "IntroState": {
+        "type": "string",
+        "enum": [
+          "none",
+          "requested",
+          "accepted",
+          "declined"
+        ]
+      },
+      "Moderation": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "published",
+          "hidden"
+        ]
+      },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amountMinor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          }
+        },
+        "required": [
+          "amountMinor",
+          "currency"
+        ],
+        "additionalProperties": false,
+        "description": "amountMinor küçük para biriminde tamsayıdır. TRY için kuruş."
+      },
+      "Point": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "additionalProperties": false
+      },
+      "Media": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "$ref": "#/components/schemas/Url"
+          },
+          "altText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "url",
+          "altText"
+        ],
+        "additionalProperties": false
+      },
+      "Person": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "displayName",
+          "avatar"
+        ],
+        "additionalProperties": false
+      },
+      "Sport": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "fallbackCover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "fallbackCover"
+        ],
+        "additionalProperties": false
+      },
+      "LevelOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/Level"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "Filters": {
+        "type": "object",
+        "properties": {
+          "sports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sport"
+            }
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelOption"
+            }
+          }
+        },
+        "required": [
+          "sports",
+          "levels"
+        ],
+        "additionalProperties": false
+      },
+      "LoginOtp": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "const": "signIn"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+[1-9][0-9]{7,14}$"
+          }
+        },
+        "required": [
+          "purpose",
+          "phone"
+        ],
+        "additionalProperties": false
+      },
+      "InviteOtp": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "const": "invitation"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+[1-9][0-9]{7,14}$"
+          },
+          "invitationCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "adultDeclared": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "purpose",
+          "phone",
+          "invitationCode",
+          "fullName",
+          "adultDeclared"
+        ],
+        "additionalProperties": false
+      },
+      "ChallengeRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LoginOtp"
+          },
+          {
+            "$ref": "#/components/schemas/InviteOtp"
+          }
+        ]
+      },
+      "Challenge": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "codeLength": {
+            "type": "integer",
+            "const": 4
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "resendAt": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "required": [
+          "challengeId",
+          "codeLength",
+          "expiresAt",
+          "resendAt"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{4}$"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "Tokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "accessExpiresAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sessionExpiresAt": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "required": [
+          "accessToken",
+          "accessExpiresAt",
+          "refreshToken",
+          "sessionExpiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "refreshToken"
+        ],
+        "additionalProperties": false
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "membershipState": {
+            "$ref": "#/components/schemas/Membership"
+          },
+          "nextAction": {
+            "$ref": "#/components/schemas/Destination"
+          },
+          "sessionExpiresAt": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "required": [
+          "membershipState",
+          "nextAction",
+          "sessionExpiresAt"
+        ],
+        "additionalProperties": false,
+        "description": "pending → review, active → events, suspended → restricted, rejected → applicationClosed."
+      },
+      "VerifiedSession": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/Session"
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/Tokens"
+          }
+        },
+        "required": [
+          "session",
+          "tokens"
+        ],
+        "additionalProperties": false
+      },
+      "InvitationRequired": {
+        "type": "object",
+        "properties": {
+          "nextAction": {
+            "type": "string",
+            "const": "invitationRequired"
+          }
+        },
+        "required": [
+          "nextAction"
+        ],
+        "additionalProperties": false
+      },
+      "Verification": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/VerifiedSession"
+          },
+          {
+            "$ref": "#/components/schemas/InvitationRequired"
+          }
+        ]
+      },
+      "RatingSummary": {
+        "type": "object",
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "average",
+          "count"
+        ],
+        "additionalProperties": false,
+        "description": "Yayımlanmış oy sayısı sıfır ise average=null."
+      },
+      "MyRating": {
+        "type": "object",
+        "properties": {
+          "stars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/Moderation"
+          }
+        },
+        "required": [
+          "stars",
+          "moderation"
+        ],
+        "additionalProperties": false
+      },
+      "RateRequest": {
+        "type": "object",
+        "properties": {
+          "stars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "stars"
+        ],
+        "additionalProperties": false
+      },
+      "RatingResult": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/RatingSummary"
+          },
+          "mine": {
+            "$ref": "#/components/schemas/MyRating"
+          }
+        },
+        "required": [
+          "summary",
+          "mine"
+        ],
+        "additionalProperties": false
+      },
+      "EventCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "placeLabel": {
+            "type": "string"
+          },
+          "startsAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "endsAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "primarySport": {
+            "$ref": "#/components/schemas/Sport"
+          },
+          "level": {
+            "$ref": "#/components/schemas/Level"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distanceMeters": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/Phase"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Point"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isSaved": {
+            "type": "boolean"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "placeLabel",
+          "startsAt",
+          "endsAt",
+          "timeZone",
+          "primarySport",
+          "level",
+          "cover",
+          "distanceMeters",
+          "price",
+          "phase",
+          "position",
+          "isSaved",
+          "rating"
+        ],
+        "additionalProperties": false,
+        "description": "position katalog koordinatıdır. timeZone IANA saat dilimidir."
+      },
+      "EventPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventCard"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "ProgramSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "startsAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "startsAt",
+          "endsAt",
+          "title",
+          "details"
+        ],
+        "additionalProperties": false
+      },
+      "ProgramDay": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgramSession"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "sessions"
+        ],
+        "additionalProperties": false
+      },
+      "MeetingPoint": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "directions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Point"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "directions",
+          "position"
+        ],
+        "additionalProperties": false
+      },
+      "TrainerCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "experienceText": {
+            "type": "string"
+          },
+          "locationLabel": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isFollowed": {
+            "type": "boolean"
+          },
+          "introductionState": {
+            "$ref": "#/components/schemas/IntroState"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "specialty",
+          "experienceText",
+          "locationLabel",
+          "bio",
+          "avatar",
+          "cover",
+          "isFollowed",
+          "introductionState"
+        ],
+        "additionalProperties": false
+      },
+      "Viewer": {
+        "type": "object",
+        "properties": {
+          "primary": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "reasonCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bookingId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "holdId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canViewActivityMap": {
+            "type": "boolean"
+          },
+          "canRate": {
+            "type": "boolean"
+          },
+          "myRating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MyRating"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "primary",
+          "reasonCode",
+          "bookingId",
+          "holdId",
+          "canViewActivityMap",
+          "canRate",
+          "myRating"
+        ],
+        "additionalProperties": false,
+        "description": "primary=viewPass ise bookingId, resumeCheckout ise holdId doludur."
+      },
+      "EventDetail": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/EventCard"
+          },
+          "programVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalSports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sport"
+            }
+          },
+          "organizer": {
+            "$ref": "#/components/schemas/TrainerCard"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgramDay"
+            }
+          },
+          "preparation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meetingPoint": {
+            "$ref": "#/components/schemas/MeetingPoint"
+          },
+          "transportNotes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accommodation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/Viewer"
+          }
+        },
+        "required": [
+          "event",
+          "programVersion",
+          "additionalSports",
+          "organizer",
+          "days",
+          "preparation",
+          "meetingPoint",
+          "transportNotes",
+          "accommodation",
+          "viewer"
+        ],
+        "additionalProperties": false
+      },
+      "Terms": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "$ref": "#/components/schemas/Url"
+          }
+        },
+        "required": [
+          "version",
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "CreateHold": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "programVersion": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "eventId",
+          "programVersion"
+        ],
+        "additionalProperties": false
+      },
+      "CheckoutSnapshot": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "placeLabel": {
+            "type": "string"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startsAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "endsAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "programVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "programDays": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "participantCount": {
+            "type": "integer",
+            "const": 1
+          },
+          "accommodationIncluded": {
+            "type": "boolean"
+          },
+          "total": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/Terms"
+          }
+        },
+        "required": [
+          "eventId",
+          "title",
+          "placeLabel",
+          "cover",
+          "startsAt",
+          "endsAt",
+          "timeZone",
+          "programVersion",
+          "programDays",
+          "participantCount",
+          "accommodationIncluded",
+          "total",
+          "terms"
+        ],
+        "additionalProperties": false
+      },
+      "Hold": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/HoldState"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "verificationEndsAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bookingId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paymentId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkout": {
+            "$ref": "#/components/schemas/CheckoutSnapshot"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "expiresAt",
+          "verificationEndsAt",
+          "bookingId",
+          "paymentId",
+          "checkout"
+        ],
+        "additionalProperties": false,
+        "description": "confirmed durumunda bookingId zorunludur. expiresAt ilk kontenjan ayrımından itibaren sabittir."
+      },
+      "StartPayment": {
+        "type": "object",
+        "properties": {
+          "acceptedTermsVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "termsAccepted": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "acceptedTermsVersion",
+          "termsAccepted"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentAction": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "redirect"
+          },
+          "url": {
+            "$ref": "#/components/schemas/Url"
+          }
+        },
+        "required": [
+          "type",
+          "url"
+        ],
+        "additionalProperties": false,
+        "description": "Taslakta barındırılan ödeme sayfası kullanılır. Sağlayıcı seçimi açıktır."
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "holdId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentState"
+          },
+          "nextAction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "paymentId",
+          "holdId",
+          "status",
+          "nextAction"
+        ],
+        "additionalProperties": false
+      },
+      "BookingStatus": {
+        "type": "string",
+        "enum": [
+          "confirmed",
+          "cancelled"
+        ]
+      },
+      "BookingRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "event": {
+            "$ref": "#/components/schemas/EventCard"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "attendance": {
+            "$ref": "#/components/schemas/Attendance"
+          },
+          "canShowPass": {
+            "type": "boolean"
+          },
+          "visibleParticipantPreview": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "event",
+          "status",
+          "attendance",
+          "canShowPass",
+          "visibleParticipantPreview"
+        ],
+        "additionalProperties": false
+      },
+      "BookingPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingRow"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "Pass": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startsAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "meetingPoint": {
+            "$ref": "#/components/schemas/MeetingPoint"
+          },
+          "qrPayload": {
+            "type": "string",
+            "minLength": 1
+          },
+          "validUntil": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "required": [
+          "bookingId",
+          "eventId",
+          "title",
+          "startsAt",
+          "timeZone",
+          "meetingPoint",
+          "qrPayload",
+          "validUntil"
+        ],
+        "additionalProperties": false,
+        "description": "qrPayload kişisel veri içermeyen, sunucuda doğrulanan opak değerdir."
+      },
+      "TrainerPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrainerCard"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "Crew": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "members"
+        ],
+        "additionalProperties": false
+      },
+      "TrainerDetail": {
+        "type": "object",
+        "properties": {
+          "trainer": {
+            "$ref": "#/components/schemas/TrainerCard"
+          },
+          "crew": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Crew"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "upcoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventCard"
+            }
+          },
+          "ratedExperiences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventCard"
+            }
+          }
+        },
+        "required": [
+          "trainer",
+          "crew",
+          "upcoming",
+          "ratedExperiences"
+        ],
+        "additionalProperties": false
+      },
+      "Introduction": {
+        "type": "object",
+        "properties": {
+          "trainerId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/IntroState"
+          },
+          "requestedAt": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "required": [
+          "trainerId",
+          "state",
+          "requestedAt"
+        ],
+        "additionalProperties": false
+      },
+      "Pin": {
+        "type": "object",
+        "properties": {
+          "eventAliasId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "position": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "recordedAt": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "required": [
+          "eventAliasId",
+          "displayName",
+          "avatar",
+          "position",
+          "recordedAt"
+        ],
+        "additionalProperties": false
+      },
+      "Sharing": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "sharingId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "enabled",
+          "sharingId",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "description": "Kapanan paylaşımda sharingId ve expiresAt null döner."
+      },
+      "ActivityMap": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "asOf": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "route": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            }
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Pin"
+            }
+          },
+          "mySharing": {
+            "$ref": "#/components/schemas/Sharing"
+          }
+        },
+        "required": [
+          "eventId",
+          "asOf",
+          "route",
+          "participants",
+          "mySharing"
+        ],
+        "additionalProperties": false
+      },
+      "ShareRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "LocationUpdate": {
+        "type": "object",
+        "properties": {
+          "sharingId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "position": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "recordedAt": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "sharingId",
+          "position",
+          "recordedAt",
+          "sequence"
+        ],
+        "additionalProperties": false
+      },
+      "Tier": {
+        "type": "string",
+        "enum": [
+          "standard",
+          "premium"
+        ]
+      },
+      "MyProfile": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phoneMasked": {
+            "type": "string"
+          },
+          "membershipState": {
+            "$ref": "#/components/schemas/Membership"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "trainerRole": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "memberId",
+          "fullName",
+          "avatar",
+          "cover",
+          "phoneMasked",
+          "membershipState",
+          "tier",
+          "trainerRole"
+        ],
+        "additionalProperties": false
+      },
+      "Visibility": {
+        "type": "string",
+        "enum": [
+          "private",
+          "club"
+        ],
+        "description": "Başlangıç değeri private. club kapsamı ürün kararıdır."
+      },
+      "Privacy": {
+        "type": "object",
+        "properties": {
+          "profileVisibility": {
+            "$ref": "#/components/schemas/Visibility"
+          }
+        },
+        "required": [
+          "profileVisibility"
+        ],
+        "additionalProperties": false
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "traceId"
+        ],
+        "additionalProperties": false
+      },
+      "AppAppearance": {
+        "type": "object",
+        "properties": {
+          "welcomeCover": {
+            "$ref": "#/components/schemas/Media"
+          },
+          "mapArtwork": {
+            "$ref": "#/components/schemas/Media"
+          },
+          "wordmark": {
+            "$ref": "#/components/schemas/Media"
+          },
+          "reviewCover": {
+            "$ref": "#/components/schemas/Media"
+          }
+        },
+        "required": [
+          "welcomeCover",
+          "mapArtwork",
+          "wordmark",
+          "reviewCover"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "bearerSession": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+[Bb]in/
+[Oo]bj/
+.vs/
+.idea/
+*.user
+.DS_Store
+.env
+.env.*
+!.env.example
