@@ -23,16 +23,33 @@ public sealed class MailSender(IConfiguration configuration, ILogger<MailSender>
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(Host) && !string.IsNullOrWhiteSpace(User) && !string.IsNullOrWhiteSpace(Password);
 
-    public async Task SendAsync(string to, string? toName, string subject, string html, string text, CancellationToken ct)
+    /// <summary>İletiyi kurar: gerçek alan adlı Message-ID, otomatik gönderim başlıkları, metin + HTML.</summary>
+    public static MimeMessage Compose(
+        IConfiguration configuration, string to, string? toName, string subject, string html, string text)
     {
-        if (!IsConfigured) throw new ApiFault(503, "EMAIL_UNAVAILABLE", "E-posta gönderimi yapılandırılmadı.");
-
-        var from = configuration["Mail:From"] ?? User!;
+        var from = configuration["Mail:From"] ?? configuration["Mail:User"] ?? "noreply@vubesclub.com";
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(configuration["Mail:FromName"] ?? "Vubes Club", from));
         message.To.Add(new MailboxAddress(toName ?? "", to));
         message.Subject = subject;
+        // Gerçek bir alan adına bağlı Message-ID: varsayılan değer makine adını taşır (örn. "instance-2026…"),
+        // bu da spam filtrelerinin bilinen bir işaretidir.
+        var domain = from.Contains('@') ? from[(from.IndexOf('@') + 1)..] : "vubesclub.com";
+        message.MessageId = MimeKit.Utils.MimeUtils.GenerateMessageId(domain);
+        // Otomatik gönderilmiş işlem iletisi (RFC 3834): otomatik yanıt döngülerini ve "toplu posta" şüphesini azaltır.
+        message.Headers.Add("Auto-Submitted", "auto-generated");
+        message.Headers.Add("X-Auto-Response-Suppress", "All");
+        if (configuration["Mail:ReplyTo"] is { Length: > 0 } replyTo)
+            message.ReplyTo.Add(MailboxAddress.Parse(replyTo));
         message.Body = new BodyBuilder { HtmlBody = html, TextBody = text }.ToMessageBody();
+        return message;
+    }
+
+    public async Task SendAsync(string to, string? toName, string subject, string html, string text, CancellationToken ct)
+    {
+        if (!IsConfigured) throw new ApiFault(503, "EMAIL_UNAVAILABLE", "E-posta gönderimi yapılandırılmadı.");
+
+        var message = Compose(configuration, to, toName, subject, html, text);
 
         // Geçici bağlantı aksaklıklarına karşı bir kez daha denenir.
         for (var attempt = 1; ; attempt++)

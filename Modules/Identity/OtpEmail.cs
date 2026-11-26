@@ -57,7 +57,6 @@ public static class OtpEmail
         <title>Vubes Club giriş kodu</title>
         </head>
         <body style="margin:0;padding:0;background:#222522;">
-        <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Giriş kodun {{code}}. {{minutes}} dakika geçerli.</div>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" {{page}}">
           <tr><td align="center" {{page}}padding:36px 16px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
@@ -72,6 +71,7 @@ public static class OtpEmail
                   <td align="center" {{page}}border:1px solid #454c44;border-radius:12px;padding:22px 8px;">
                     <table role="presentation" align="center" cellpadding="0" cellspacing="0"><tr>{{digits}}</tr></table>
                   </td></tr></table>
+                <p style="margin:14px 0 0;text-align:center;font:400 14px/1.4 'Courier New',Courier,monospace;letter-spacing:2px;color:#9a9486;">Kod: {{code}}</p>
                 <p style="margin:24px 0 0;font:400 14px/1.55 Helvetica,Arial,sans-serif;color:#9a9486;">Bu kod <strong style="color:#a39e90;">{{minutes}} dakika</strong> geçerli. Uygulamaya dönüp kodu gir.</p>
                 <p style="margin:14px 0 0;font:400 13px/1.55 Helvetica,Arial,sans-serif;color:#9a9486;">Kodu kimseyle paylaşma. Vubes Club ekibi seni asla kodunu paylaşman için aramaz.</p>
               </td></tr>
