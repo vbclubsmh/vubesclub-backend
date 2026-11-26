@@ -8,7 +8,7 @@ namespace VubesClub.Api.Modules.Community;
 
 public sealed class CommunityService(ClubDb db, Caller caller, CatalogQueries catalog)
 {
-    private IQueryable<Trainer> Accessible() => db.Set<Trainer>().Where(trainer =>
+    private IQueryable<Trainer> Accessible() => db.Set<Trainer>().Where(trainer => trainer.Active &&
         catalog.EligibleEvents().Any() &&
         db.Set<ClubEvent>().Any(e => e.TrainerId == trainer.Id && e.Published && !e.Cancelled));
 
@@ -89,7 +89,7 @@ public sealed class CommunityService(ClubDb db, Caller caller, CatalogQueries ca
 
     private async Task VisibleTrainer(Guid id, CancellationToken ct)
     {
-        if (!await db.Set<Trainer>().AnyAsync(t => t.Id == id &&
+        if (!await db.Set<Trainer>().AnyAsync(t => t.Id == id && t.Active &&
                 db.Set<Member>().Any(m => m.Id == t.MemberId && m.Status == "active") &&
                 db.Set<ClubEvent>().Any(e => e.TrainerId == id && e.Published && !e.Cancelled), ct))
             throw ApiFault.Missing();

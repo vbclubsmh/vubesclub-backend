@@ -34,16 +34,55 @@ public static class IdentityEndpoints
         me.MapGet("", async (Caller caller, ClubDb db, CancellationToken ct) =>
         {
             var member = await db.Set<Member>().SingleAsync(m => m.Id == caller.MemberId, ct);
-            var now = DateTime.UtcNow;
-            var premium = await db.Set<Subscription>().AnyAsync(s =>
-                s.MemberId == member.Id && s.Starts <= now && s.Ends > now, ct);
-            var trainer = await db.Set<Trainer>().AnyAsync(t => t.MemberId == member.Id, ct);
+            return await Profile(member, db, ct);
+        });
+        me.MapPut("/avatar", async (HttpRequest request, Caller caller, ClubDb db, AvatarStore store, CancellationToken ct) =>
+        {
+            if (request.ContentLength is > AvatarStore.MaxBytes)
+                throw new ApiFault(413, "AVATAR_TOO_LARGE", "Fotoğraf en fazla 5 MB olabilir.");
+            using var buffer = new MemoryStream();
+            var chunk = new byte[81920];
+            int read;
+            while ((read = await request.Body.ReadAsync(chunk, ct)) > 0)
+            {
+                buffer.Write(chunk, 0, read);
+                if (buffer.Length > AvatarStore.MaxBytes)
+                    throw new ApiFault(413, "AVATAR_TOO_LARGE", "Fotoğraf en fazla 5 MB olabilir.");
+            }
 
-            return new MyProfile(member.Id, member.FullName, Asset(member.Avatar), Asset(member.Cover),
-                "•••• " + member.Phone[^4..], member.Status, premium ? "premium" : "standard", trainer);
+            var bytes = buffer.ToArray();
+            var extension = AvatarStore.ExtensionOf(bytes) ??
+                throw ApiFault.Invalid("Yalnızca JPEG veya PNG fotoğraf yükleyebilirsiniz.");
+            var url = await store.SaveAsync(caller.MemberId, bytes, extension, ct);
+            var member = await db.Set<Member>().SingleAsync(m => m.Id == caller.MemberId, ct);
+            var previous = member.Avatar;
+            member.Avatar = url;
+            await db.SaveChangesAsync(ct);
+            store.Remove(previous);
+            return await Profile(member, db, ct);
+        });
+        me.MapDelete("/avatar", async (Caller caller, ClubDb db, AvatarStore store, CancellationToken ct) =>
+        {
+            var member = await db.Set<Member>().SingleAsync(m => m.Id == caller.MemberId, ct);
+            var previous = member.Avatar;
+            member.Avatar = null;
+            await db.SaveChangesAsync(ct);
+            store.Remove(previous);
+            return await Profile(member, db, ct);
         });
         me.MapGet("/privacy", (Caller caller, ClubDb db, CancellationToken ct) =>
             db.Set<Member>().Where(m => m.Id == caller.MemberId).Select(m => new Privacy(m.Visibility)).SingleAsync(ct));
+    }
+
+    private static async Task<MyProfile> Profile(Member member, ClubDb db, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var premium = await db.Set<Subscription>().AnyAsync(s =>
+            s.MemberId == member.Id && s.Starts <= now && s.Ends > now, ct);
+        var trainer = await db.Set<Trainer>().AnyAsync(t => t.MemberId == member.Id && t.Active, ct);
+
+        return new MyProfile(member.Id, member.FullName, Asset(member.Avatar), Asset(member.Cover),
+            "•••• " + member.Phone[^4..], member.Status, premium ? "premium" : "standard", trainer);
     }
 
     private static Media? Asset(string? url) => url == null ? null : new Media(url, null);

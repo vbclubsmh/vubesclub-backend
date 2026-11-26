@@ -15,7 +15,8 @@ public sealed class IdentityService(
     IConfiguration configuration)
 {
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
-    private bool UsesFixedOtp => configuration.GetValue<bool>("Identity:AllowFixedOtp");
+    private bool UsesFixedOtp(string phone) => OtpCodes.FixedFor(configuration, phone);
+    private int CodeLength(string phone) => UsesFixedOtp(phone) ? FixedOtpSmsCodes.Code.Length : OtpCodes.CodeLength;
 
     public Task<Challenge> CreateLoginChallenge(LoginOtp request, CancellationToken ct) =>
         CreateChallenge(request.Phone, null, null, null, ct);
@@ -63,7 +64,7 @@ public sealed class IdentityService(
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.LockAsync("otp:" + phone, ct);
         var now = Now;
-        var recent = db.Set<OtpChallenge>().Where(c => c.Phone == phone && c.Created > now.AddMinutes(-5));
+        var recent = db.Set<OtpChallenge>().Where(c => c.Phone == phone && c.Created > now.AddMinutes(-OtpCodes.LifetimeMinutes));
         if (await recent.AnyAsync(c => c.ResendAt > now, ct) || await recent.CountAsync(ct) >= 5 ||
             await recent.SumAsync(c => (int?)c.Attempts, ct) >= 5)
             throw Limit();
@@ -86,10 +87,19 @@ public sealed class IdentityService(
             Digest = "", Created = now
         };
         db.Add(challenge);
-        await Deliver(challenge, now, ct);
+        string? recipientEmail = challenge.Email;
+        string? recipientName = challenge.FullName;
+        if (application is null)
+        {
+            var known = await db.Set<Member>().Where(m => m.Phone == phone)
+                .Select(m => new { m.Email, m.FullName }).SingleOrDefaultAsync(ct);
+            recipientEmail = known?.Email;
+            recipientName = known?.FullName;
+        }
+        await Deliver(challenge, now, new OtpTarget(phone, recipientEmail, recipientName), ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
-        return View(challenge);
+        return View(challenge, lastDispatch);
     }
 
     public async Task<Challenge> Resend(Guid id, CancellationToken ct)
@@ -100,10 +110,19 @@ public sealed class IdentityService(
         if (challenge.ResendAt > now || challenge.Attempts >= 5) throw Limit();
         if (challenge.Consumed || challenge.Expires <= now)
             throw new ApiFault(410, "OTP_EXPIRED", "Kodun süresi doldu.");
-        await Deliver(challenge, now, ct);
+        var email = challenge.Email;
+        var name = challenge.FullName;
+        if (email is null)
+        {
+            var known = await db.Set<Member>().Where(m => m.Phone == challenge.Phone)
+                .Select(m => new { m.Email, m.FullName }).SingleOrDefaultAsync(ct);
+            email = known?.Email;
+            name = known?.FullName;
+        }
+        await Deliver(challenge, now, new OtpTarget(challenge.Phone, email, name), ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
-        return View(challenge);
+        return View(challenge, lastDispatch);
     }
 
     public async Task<IResult> Verify(Guid id, string code, CancellationToken ct)
@@ -115,9 +134,9 @@ public sealed class IdentityService(
         if (challenge.Consumed || challenge.Expires <= now)
             throw new ApiFault(410, "OTP_EXPIRED", "Kod kullanılmış veya süresi dolmuş.");
 
-        var codeMatches = UsesFixedOtp
-            ? string.Equals(code, "1111", StringComparison.Ordinal)
-            : code?.Length == 4 && code.All(char.IsAsciiDigit) && CryptographicOperations.FixedTimeEquals(
+        var codeMatches = UsesFixedOtp(challenge.Phone)
+            ? string.Equals(code, FixedOtpSmsCodes.Code, StringComparison.Ordinal)
+            : code?.Length == CodeLength(challenge.Phone) && code.All(char.IsAsciiDigit) && CryptographicOperations.FixedTimeEquals(
                 Convert.FromHexString(challenge.Digest), Convert.FromHexString(protector.Digest(id, code)));
         if (!codeMatches)
         {
@@ -241,11 +260,13 @@ public sealed class IdentityService(
         return await db.Set<OtpChallenge>().SingleAsync(c => c.Id == id, ct);
     }
 
-    private async Task Deliver(OtpChallenge challenge, DateTime now, CancellationToken ct)
+    private OtpDispatch lastDispatch = new("", "email", OtpCodes.CodeLength);
+
+    private async Task Deliver(OtpChallenge challenge, DateTime now, OtpTarget target, CancellationToken ct)
     {
-        var code = await delivery.SendAsync(challenge.Phone, ct);
-        challenge.Digest = protector.Digest(challenge.Id, code);
-        challenge.Expires = now.AddMinutes(5);
+        lastDispatch = await delivery.SendAsync(target, ct);
+        challenge.Digest = protector.Digest(challenge.Id, lastDispatch.Code);
+        challenge.Expires = now.AddMinutes(OtpCodes.LifetimeMinutes);
         challenge.ResendAt = now.AddMinutes(1);
     }
 
@@ -259,7 +280,7 @@ public sealed class IdentityService(
         return new Tokens(access, session.AccessExpires, refresh, session.Expires);
     }
 
-    private static Challenge View(OtpChallenge c) => new(c.Id, 4, c.Expires, c.ResendAt);
+    private static Challenge View(OtpChallenge c, OtpDispatch d) => new(c.Id, d.Length, c.Expires, c.ResendAt, d.Channel);
 
     private static bool IsEmail(string? email) =>
         email is { Length: <= 254 } && System.Net.Mail.MailAddress.TryCreate(email, out var parsed) &&

@@ -74,7 +74,9 @@
             "description": "SMS sağlayıcısı kullanılamıyor",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
               }
             }
           }
@@ -93,7 +95,9 @@
     },
     "/auth/application-otp-challenges": {
       "post": {
-        "tags": ["Erişim"],
+        "tags": [
+          "Erişim"
+        ],
         "operationId": "createApplicationOtpChallenge",
         "summary": "Üyelik başvurusunu telefon doğrulamasıyla başlat.",
         "security": [],
@@ -102,7 +106,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ApplicationOtp" }
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationOtp"
+              }
             }
           }
         },
@@ -111,13 +117,42 @@
             "description": "Başarılı.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Challenge" }
+                "schema": {
+                  "$ref": "#/components/schemas/Challenge"
+                }
               }
             }
           },
-          "422": { "description": "Alan veya iş kuralı geçersiz", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "429": { "description": "Deneme sınırı aşıldı", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "503": { "description": "SMS sağlayıcısı kullanılamıyor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "422": {
+            "description": "Alan veya iş kuralı geçersiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Deneme sınırı aşıldı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SMS sağlayıcısı kullanılamıyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2086,6 +2121,135 @@
           }
         }
       }
+    },
+    "/me/avatar": {
+      "put": {
+        "tags": [
+          "Profil"
+        ],
+        "operationId": "setMyAvatar",
+        "summary": "Profil fotoğrafını değiştir (JPEG veya PNG, en fazla 5 MB; gövde ham görsel).",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Güncel profil.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Fotoğraf çok büyük",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Geçersiz fotoğraf",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profil"
+        ],
+        "operationId": "removeMyAvatar",
+        "summary": "Profil fotoğrafını kaldır.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Güncel profil.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2371,15 +2535,59 @@
             "type": "string",
             "minLength": 1
           },
-          "email": { "type": "string", "format": "email", "maxLength": 254 },
-          "university": { "type": "string", "minLength": 1, "maxLength": 160 },
-          "jobTitle": { "type": "string", "minLength": 1, "maxLength": 120 },
-          "heightCm": { "type": "integer", "minimum": 100, "maximum": 250 },
-          "weightKg": { "type": "integer", "minimum": 30, "maximum": 300 },
-          "workplace": { "type": ["string", "null"], "maxLength": 160 },
-          "instagram": { "type": ["string", "null"], "maxLength": 100 },
-          "linkedIn": { "type": ["string", "null"], "maxLength": 300 },
-          "invitationCode": { "type": ["string", "null"], "minLength": 1 },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "university": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "jobTitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "heightCm": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 250
+          },
+          "weightKg": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 300
+          },
+          "workplace": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160
+          },
+          "instagram": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "linkedIn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "invitationCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
           "adultDeclared": {
             "type": "boolean",
             "const": true
@@ -2405,20 +2613,33 @@
           },
           "codeLength": {
             "type": "integer",
-            "const": 4
+            "enum": [
+              4,
+              6
+            ]
           },
           "expiresAt": {
             "$ref": "#/components/schemas/Instant"
           },
           "resendAt": {
             "$ref": "#/components/schemas/Instant"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "test"
+            ],
+            "description": "Kodun iletildiği kanal; numara sorgulanamaması için bilinmeyen numaralarda da aynı yanıt döner."
           }
         },
         "required": [
           "challengeId",
           "codeLength",
           "expiresAt",
-          "resendAt"
+          "resendAt",
+          "channel"
         ],
         "additionalProperties": false
       },
@@ -2427,7 +2648,7 @@
         "properties": {
           "code": {
             "type": "string",
-            "pattern": "^[0-9]{4}$"
+            "pattern": "^[0-9]{4}$|^[0-9]{6}$"
           }
         },
         "required": [
@@ -2527,9 +2748,14 @@
       "ApplicationReceived": {
         "type": "object",
         "properties": {
-          "nextAction": { "type": "string", "const": "applicationReceived" }
+          "nextAction": {
+            "type": "string",
+            "const": "applicationReceived"
+          }
         },
-        "required": ["nextAction"],
+        "required": [
+          "nextAction"
+        ],
         "additionalProperties": false
       },
       "Verification": {

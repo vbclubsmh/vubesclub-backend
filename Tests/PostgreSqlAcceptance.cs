@@ -14,7 +14,9 @@ namespace VubesClub.Verification;
 
 internal sealed class TestSmsCodes : VubesClub.Api.Modules.Identity.ISmsCodes
 {
-    public Task<string> SendAsync(string phone, CancellationToken ct) => Task.FromResult("1111");
+    public Task<VubesClub.Api.Modules.Identity.OtpDispatch> SendAsync(
+        VubesClub.Api.Modules.Identity.OtpTarget target, CancellationToken ct) =>
+        Task.FromResult(new VubesClub.Api.Modules.Identity.OtpDispatch("111111", "test", 6));
 }
 
 internal static class PostgreSqlAcceptance
@@ -50,7 +52,7 @@ internal static class PostgreSqlAcceptance
         var gateway = new TestGateway();
         await using var app = ClubHost.Build(
             ["--environment=Development", "--ConnectionStrings:Club=" + connection,
-             "--Security:OtpKey=" + Secrets.RandomToken()],
+             "--Security:OtpKey=" + Secrets.RandomToken(), "--Identity:AllowFixedOtp=false"],
             builder =>
             {
                 builder.Services.AddSingleton<IServer>(server);
@@ -205,20 +207,20 @@ internal static class PostgreSqlAcceptance
     private static async Task<VerifiedSession> VerifyOtp(InProcessServer server, LoginOtp request)
     {
         var challenge = (await server.Send("POST", Api + "/auth/otp-challenges", request)).Expect(HttpStatusCode.Accepted).Read<Challenge>();
-        Checks.Require(challenge.CodeLength == 4, "Expected four-digit OTP.");
+        Checks.Require(challenge.CodeLength == 6 && challenge.Channel == "test", "Expected six-digit OTP.");
         var path = Api + "/auth/otp-challenges/" + challenge.ChallengeId + "/verify";
-        (await server.Send("POST", path, new VerifyRequest("0000"))).Expect(HttpStatusCode.UnprocessableEntity);
-        return (await server.Send("POST", path, new VerifyRequest("1111"))).Expect(HttpStatusCode.OK).Read<VerifiedSession>();
+        (await server.Send("POST", path, new VerifyRequest("000000"))).Expect(HttpStatusCode.UnprocessableEntity);
+        return (await server.Send("POST", path, new VerifyRequest("111111"))).Expect(HttpStatusCode.OK).Read<VerifiedSession>();
     }
 
     private static async Task VerifyApplicationOtp(InProcessServer server, ApplicationOtp request)
     {
         var challenge = (await server.Send("POST", Api + "/auth/application-otp-challenges", request))
             .Expect(HttpStatusCode.Accepted).Read<Challenge>();
-        Checks.Require(challenge.CodeLength == 4, "Expected four-digit invitation OTP.");
+        Checks.Require(challenge.CodeLength == 6, "Expected six-digit invitation OTP.");
         var path = Api + "/auth/otp-challenges/" + challenge.ChallengeId + "/verify";
-        (await server.Send("POST", path, new VerifyRequest("0000"))).Expect(HttpStatusCode.UnprocessableEntity);
-        var result = (await server.Send("POST", path, new VerifyRequest("1111")))
+        (await server.Send("POST", path, new VerifyRequest("000000"))).Expect(HttpStatusCode.UnprocessableEntity);
+        var result = (await server.Send("POST", path, new VerifyRequest("111111")))
             .Expect(HttpStatusCode.OK).Read<ApplicationReceived>();
         Checks.Require(result.NextAction == "applicationReceived", "Application verification did not finish in review state.");
     }

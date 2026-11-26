@@ -16,7 +16,8 @@ CREATE TABLE trainer (
     bio text NOT NULL,
     experience text NOT NULL,
     location text NOT NULL,
-    cover text
+    cover text,
+    active boolean NOT NULL DEFAULT true
 );
 
 CREATE TABLE invitation (

@@ -6,6 +6,7 @@
     <RootNamespace>VubesClub.Api</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="MailKit" Version="5.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <EmbeddedResource Include="Database/*.sql" />
     <Compile Remove="Tests/**/*.cs" />

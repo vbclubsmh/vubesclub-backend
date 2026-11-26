@@ -19,11 +19,10 @@ public static class ClubHost
 
         builder.Services.AddDbContext<ClubDb>(options => options.UseNpgsql(connection));
         builder.Services.AddSingleton(TimeProvider.System);
-        if (builder.Configuration.GetValue<bool>("Identity:AllowFixedOtp"))
-            builder.Services.AddSingleton<ISmsCodes, FixedOtpSmsCodes>();
-        else
-            builder.Services.AddSingleton<ISmsCodes, UnconfiguredSmsCodes>();
+        builder.Services.AddSingleton<MailSender>();
+        builder.Services.AddSingleton<ISmsCodes, OtpCodes>();
         builder.Services.AddSingleton<OtpProtector>();
+        builder.Services.AddSingleton<AvatarStore>();
         if (builder.Environment.IsDevelopment())
             builder.Services.AddScoped<IPaymentGateway, DevelopmentPaymentGateway>();
         else
@@ -39,6 +38,12 @@ public static class ClubHost
         configure?.Invoke(builder);
         var app = builder.Build();
 
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = app.Services.GetRequiredService<AvatarStore>().Files,
+            RequestPath = "/media/members",
+            OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable"
+        });
         app.UseStaticFiles(new StaticFileOptions
         {
             OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=3600"

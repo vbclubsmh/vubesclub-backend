@@ -4,4 +4,5 @@ public sealed record Challenge(
     Guid ChallengeId,
     int CodeLength,
     DateTime ExpiresAt,
-    DateTime ResendAt);
+    DateTime ResendAt,
+    string Channel);

@@ -2,5 +2,8 @@ namespace VubesClub.Api.Modules.Identity;
 
 public sealed class FixedOtpSmsCodes : ISmsCodes
 {
-    public Task<string> SendAsync(string phone, CancellationToken ct) => Task.FromResult("1111");
+    public const string Code = "1111";
+
+    public Task<OtpDispatch> SendAsync(OtpTarget target, CancellationToken ct) =>
+        Task.FromResult(new OtpDispatch(Code, "test", Code.Length));
 }

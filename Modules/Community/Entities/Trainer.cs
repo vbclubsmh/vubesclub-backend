@@ -10,4 +10,5 @@ public sealed class Trainer
     public required string Experience { get; set; }
     public required string Location { get; set; }
     public string? Cover { get; set; }
+    public bool Active { get; set; } = true;
 }
