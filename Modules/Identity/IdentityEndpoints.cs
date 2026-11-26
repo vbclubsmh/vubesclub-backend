@@ -9,8 +9,10 @@ public static class IdentityEndpoints
     public static void MapIdentity(this RouteGroupBuilder api)
     {
         var auth = api.MapGroup("/auth");
-        auth.MapPost("/otp-challenges", async (OtpRequest body, IdentityService service, CancellationToken ct) =>
-            Results.Json(await service.Create(body, ct), statusCode: 202));
+        auth.MapPost("/otp-challenges", async (LoginOtp body, IdentityService service, CancellationToken ct) =>
+            Results.Json(await service.CreateLoginChallenge(body, ct), statusCode: 202));
+        auth.MapPost("/application-otp-challenges", async (ApplicationOtp body, IdentityService service, CancellationToken ct) =>
+            Results.Json(await service.CreateApplicationChallenge(body, ct), statusCode: 202));
         auth.MapPost("/otp-challenges/{challengeId:guid}/resend",
             (Guid challengeId, IdentityService service, CancellationToken ct) => service.Resend(challengeId, ct));
         auth.MapPost("/otp-challenges/{challengeId:guid}/verify",

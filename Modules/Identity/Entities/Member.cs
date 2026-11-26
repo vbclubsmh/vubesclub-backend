@@ -5,6 +5,7 @@ public sealed class Member
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public required string Phone { get; set; }
+    public string? Email { get; set; }
     public required string FullName { get; set; }
     public required string Status { get; set; }
     public string? Avatar { get; set; }

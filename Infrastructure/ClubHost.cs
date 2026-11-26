@@ -19,7 +19,10 @@ public static class ClubHost
 
         builder.Services.AddDbContext<ClubDb>(options => options.UseNpgsql(connection));
         builder.Services.AddSingleton(TimeProvider.System);
-        builder.Services.AddSingleton<ISmsCodes, DevelopmentSmsCodes>();
+        if (builder.Configuration.GetValue<bool>("Identity:AllowFixedOtp"))
+            builder.Services.AddSingleton<ISmsCodes, FixedOtpSmsCodes>();
+        else
+            builder.Services.AddSingleton<ISmsCodes, UnconfiguredSmsCodes>();
         builder.Services.AddSingleton<OtpProtector>();
         if (builder.Environment.IsDevelopment())
             builder.Services.AddScoped<IPaymentGateway, DevelopmentPaymentGateway>();

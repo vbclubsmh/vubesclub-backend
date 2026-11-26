@@ -7,6 +7,12 @@ public sealed class OtpChallenge
     public required string Phone { get; set; }
     public Guid? InviteId { get; set; }
     public string? FullName { get; set; }
+    public string? Email { get; set; }
+    public string? University { get; set; }
+    public string? JobTitle { get; set; }
+    public string? Workplace { get; set; }
+    public string? Instagram { get; set; }
+    public string? LinkedIn { get; set; }
     public required string Digest { get; set; }
     public DateTime Expires { get; set; }
     public DateTime ResendAt { get; set; }

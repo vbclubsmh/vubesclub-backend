@@ -1,6 +1,6 @@
 # Vubes Club · Ekran, API ve PostgreSQL ilişkileri
 
-23 Kasım 2026 kontrolü. Bu belge çalışma kopyasındaki backend kodunu ve ilk migration’ı tarif eder. Tam HTTP sözleşmesi `Contracts/mobile.openapi.json`, C# istek ve yanıtları `Contracts/MobileContracts.cs`, fiziksel tablo ve kısıtlar `Database/Schema.sql` içindedir.
+26 Kasım 2026 kontrolü. Bu belge çalışma kopyasındaki backend kodunu ve migration’ları tarif eder. Tam HTTP sözleşmesi `Contracts/mobile.openapi.json`, C# istek ve yanıtları `Contracts/Identity/` ve `Contracts/` altındadır; fiziksel tablo ve kısıtlar `Database/Schema.sql` içindedir.
 
 ## Mimari
 
@@ -12,9 +12,10 @@ Ortak URL öneki `/api/v1`. SwiftUI’daki Checkout’un demo ve canlı görün�
 
 | Ekran | HTTP ve modeller | Temel PostgreSQL ilişkisi |
 |---|---|---|
-| Welcome | Saklı oturum varsa `GET /auth/session` → `Session`. Görseller yerel. | `mobile_session.member_id → member.id` |
-| Sign In / Invitation | `POST /auth/otp-challenges`, GSM veya davetli formu → `Challenge` | `otp_challenge.invite_id → invitation.id`; davet → tahsis edilen PT |
-| SMS Verification | `POST /auth/otp-challenges/{id}/verify`, `POST …/{id}/resend`, gerektiğinde `POST /auth/session/refresh` | Doğrulama → üye ve oturum. Davetli başvuru → üye ve tüketilen davet |
+| Welcome | `GET /app/appearance` karşılama görselini verir. Saklı oturum varsa `GET /auth/session` çağrılır. | `mobile_session.member_id → member.id` |
+| Sign Up | `POST /auth/application-otp-challenges` → telefon OTP challenge. Davet kodu isteğe bağlıdır. | `otp_challenge` geçici başvuru alanları; geçerli davet varsa `invite_id → invitation.id` |
+| Sign In | `POST /auth/otp-challenges` → mevcut üye için telefon OTP challenge. | `member.phone` bulunur; yalnız `member.status = active` olunca oturum açılır. |
+| SMS Verification | `POST /auth/otp-challenges/{id}/verify`, `POST …/{id}/resend`, gerektiğinde `POST /auth/session/refresh` | Başvuru doğrulaması → pending `member` ve `application_entry`; aktif üyede oturum. Geçici test OTP'si `Identity:AllowFixedOtp=true` ile açılır ve `1111` kullanır. |
 | Membership Review | `GET /auth/session` → üyelik durumu ve sonraki ekran | `member.status` ve `application_entry.member_id` |
 | Events | `GET /events` → `EventPage`; `GET /event-filters` → `Filters`; `PUT/DELETE /me/saved-events/{eventId}` | Etkinlik → yayımlanmış sürüm → ana spor. `saved_event` üye ile etkinliği eşler. |
 | Explore | `GET /events?hasLocation=true`, isteğe bağlı `bbox` → `EventPage` | Katalog sürümündeki enlem/boylam. Kart ve pin aynı etkinlik kimliğini taşır. |
@@ -54,11 +55,11 @@ Aşağıdaki liste doğrudan ilk migration’ın DDL tanımlarından çıkarılm
 
 | Tablo | Kolonlar (PK: `id`) | Yabancı anahtarlar |
 |---|---|---|
-| `member` | `id`, `phone`, `full_name`, `status`, `avatar`, `cover`, `visibility` | — |
+| `member` | `id`, `phone`, `email`, `full_name`, `status`, `avatar`, `cover`, `visibility` | — |
 | `trainer` | `id`, `member_id`, `specialty`, `bio`, `experience`, `location`, `cover` | `member_id → member(id)` |
 | `invitation` | `id`, `digest`, `trainer_id`, `expires`, `used_by` | `trainer_id → trainer(id)`<br>`used_by → member(id)` |
-| `application_entry` | `id`, `member_id`, `invitation_id`, `adult_declared_at` | `member_id → member(id)`<br>`invitation_id → invitation(id)` |
-| `otp_challenge` | `id`, `phone`, `invite_id`, `full_name`, `digest`, `expires`, `resend_at`, `created`, `attempts`, `consumed` | `invite_id → invitation(id)` |
+| `application_entry` | `id`, `member_id`, nullable `invitation_id`, `adult_declared_at`, `university`, `job_title`, `workplace`, `instagram`, `linkedin`, `submitted_at` | `member_id → member(id)`<br>`invitation_id → invitation(id)` |
+| `otp_challenge` | `id`, `phone`, `invite_id`, `full_name`, application profile fields, `digest`, `expires`, `resend_at`, `created`, `attempts`, `consumed` | `invite_id → invitation(id)` |
 | `mobile_session` | `id`, `member_id`, `access_digest`, `refresh_digest`, `access_expires`, `expires`, `revoked` | `member_id → member(id)` |
 | `subscription` | `id`, `member_id`, `starts`, `ends` | `member_id → member(id)` |
 | `sport_row` | `id`, `code`, `label`, `fallback_cover` | — |
@@ -93,7 +94,7 @@ Aşağıdaki liste doğrudan ilk migration’ın DDL tanımlarından çıkarılm
 | Durum | Teslim veya kabul ölçütü |
 |---|---|
 | PostgreSQL uçtan uca testi açık | Temiz bir test veritabanında migration ve seed uygulansın. Davet → OTP → üyelik kararı, katalog → yer ayırma → ödeme sonucu → kart zinciri doğrulansın. İki üyenin son koltuğu eşzamanlı istemesi, tekrarlanan bildirim ve geç ödeme/iade sınansın. |
-| Üretim SMS’i açık | Şu anda yalnız geliştirme numaraları ve yapılandırılmış test kodu desteklenir. Gerçek teslim için SMS adaptörü ve sağlayıcı bilgileri gerekir. |
+| SMS sağlayıcısı beklemede | Test için `Identity:AllowFixedOtp=true` ayarı tüm telefon numaralarında `1111` kodunu kabul eder; gerçek kullanıcılara açık sunucuda bu ayar güvenli değildir. Üretim SMS sağlayıcısı bağlandığında kapatılmalıdır. |
 | Tahsilat sağlayıcısı anlaşmaya bağlı | Etkinlik bazlı ödeme arayüzü ve sunucu akışı vardır. Sağlayıcı seçildiğinde sipariş açma, imzalı bildirimi doğrulama, durum sorgulama ve tam iade gerçek adaptörde sınanmalıdır. |
 | Karar ve saha geçmişi sınırlı | Güncel üyelik kararı member.status, güncel katılım durumu booking_row.attendance alanındadır. Başvuru kararını kimin ne zaman verdiği ve saha durum değişikliklerinin geçmişi ayrı kayıt olarak modellenmemiştir. |
 | İzin ayrıntısı açık | Saha görevlendirmesinde etkinlik ve geçerlilik tarihleri vardır. Haritayı görüntüleme ile konum yayınlama için ayrı görev izinleri yoktur. Değerlendirmede fiilî katılım ve moderasyon bulunur, ayrıca bir değerlendirme izni kaydı yoktur. |

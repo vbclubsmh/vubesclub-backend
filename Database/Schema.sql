@@ -1,6 +1,7 @@
 CREATE TABLE member (
     id uuid PRIMARY KEY,
     phone text NOT NULL,
+    email text,
     full_name text NOT NULL,
     status text NOT NULL,
     avatar text,
@@ -29,8 +30,14 @@ CREATE TABLE invitation (
 CREATE TABLE application_entry (
     id uuid PRIMARY KEY,
     member_id uuid NOT NULL,
-    invitation_id uuid NOT NULL,
-    adult_declared_at timestamptz NOT NULL
+    invitation_id uuid,
+    adult_declared_at timestamptz NOT NULL,
+    university text NOT NULL,
+    job_title text NOT NULL,
+    workplace text,
+    instagram text,
+    linkedin text,
+    submitted_at timestamptz NOT NULL
 );
 
 CREATE TABLE otp_challenge (
@@ -38,6 +45,12 @@ CREATE TABLE otp_challenge (
     phone text NOT NULL,
     invite_id uuid,
     full_name text,
+    email text,
+    university text,
+    job_title text,
+    workplace text,
+    instagram text,
+    linkedin text,
     digest text NOT NULL,
     expires timestamptz NOT NULL,
     resend_at timestamptz NOT NULL,
@@ -280,6 +293,7 @@ CREATE TABLE last_location (
 );
 
 CREATE UNIQUE INDEX member_u1 ON member (phone);
+CREATE UNIQUE INDEX member_u2 ON member (email) WHERE email IS NOT NULL;
 
 ALTER TABLE trainer ADD FOREIGN KEY (member_id) REFERENCES member(id);
 CREATE UNIQUE INDEX trainer_u1 ON trainer (member_id);
@@ -290,7 +304,7 @@ CREATE UNIQUE INDEX invitation_u1 ON invitation (digest);
 
 ALTER TABLE application_entry ADD FOREIGN KEY (member_id) REFERENCES member(id);
 ALTER TABLE application_entry ADD FOREIGN KEY (invitation_id) REFERENCES invitation(id);
-CREATE UNIQUE INDEX application_entry_u1 ON application_entry (invitation_id);
+CREATE UNIQUE INDEX application_entry_u1 ON application_entry (invitation_id) WHERE invitation_id IS NOT NULL;
 
 ALTER TABLE otp_challenge ADD FOREIGN KEY (invite_id) REFERENCES invitation(id);
 

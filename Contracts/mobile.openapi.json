@@ -17,7 +17,7 @@
           "Erişim"
         ],
         "operationId": "createOtpChallenge",
-        "summary": "Giriş veya davet için SMS doğrulamasını başlat.",
+        "summary": "Mevcut üye için SMS ile giriş doğrulamasını başlat.",
         "security": [],
         "x-access": "public",
         "responses": {
@@ -69,6 +69,14 @@
                 "description": "Saniye"
               }
             }
+          },
+          "503": {
+            "description": "SMS sağlayıcısı kullanılamıyor",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
           }
         },
         "requestBody": {
@@ -76,10 +84,40 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChallengeRequest"
+                "$ref": "#/components/schemas/LoginOtp"
               }
             }
           }
+        }
+      }
+    },
+    "/auth/application-otp-challenges": {
+      "post": {
+        "tags": ["Erişim"],
+        "operationId": "createApplicationOtpChallenge",
+        "summary": "Üyelik başvurusunu telefon doğrulamasıyla başlat.",
+        "security": [],
+        "x-access": "public",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ApplicationOtp" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Challenge" }
+              }
+            }
+          },
+          "422": { "description": "Alan veya iş kuralı geçersiz", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "429": { "description": "Deneme sınırı aşıldı", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "503": { "description": "SMS sağlayıcısı kullanılamıyor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
@@ -2312,63 +2350,48 @@
       "LoginOtp": {
         "type": "object",
         "properties": {
-          "purpose": {
-            "type": "string",
-            "const": "signIn"
-          },
           "phone": {
             "type": "string",
             "pattern": "^\\+[1-9][0-9]{7,14}$"
           }
         },
         "required": [
-          "purpose",
           "phone"
         ],
         "additionalProperties": false
       },
-      "InviteOtp": {
+      "ApplicationOtp": {
         "type": "object",
         "properties": {
-          "purpose": {
-            "type": "string",
-            "const": "invitation"
-          },
           "phone": {
             "type": "string",
             "pattern": "^\\+[1-9][0-9]{7,14}$"
-          },
-          "invitationCode": {
-            "type": "string",
-            "minLength": 1
           },
           "fullName": {
             "type": "string",
             "minLength": 1
           },
+          "email": { "type": "string", "format": "email", "maxLength": 254 },
+          "university": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "jobTitle": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "workplace": { "type": ["string", "null"], "maxLength": 160 },
+          "instagram": { "type": ["string", "null"], "maxLength": 100 },
+          "linkedIn": { "type": ["string", "null"], "maxLength": 300 },
+          "invitationCode": { "type": ["string", "null"], "minLength": 1 },
           "adultDeclared": {
             "type": "boolean",
             "const": true
           }
         },
         "required": [
-          "purpose",
           "phone",
-          "invitationCode",
           "fullName",
+          "email",
+          "university",
+          "jobTitle",
           "adultDeclared"
         ],
         "additionalProperties": false
-      },
-      "ChallengeRequest": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/LoginOtp"
-          },
-          {
-            "$ref": "#/components/schemas/InviteOtp"
-          }
-        ]
       },
       "Challenge": {
         "type": "object",
@@ -2497,6 +2520,14 @@
         ],
         "additionalProperties": false
       },
+      "ApplicationReceived": {
+        "type": "object",
+        "properties": {
+          "nextAction": { "type": "string", "const": "applicationReceived" }
+        },
+        "required": ["nextAction"],
+        "additionalProperties": false
+      },
       "Verification": {
         "oneOf": [
           {
@@ -2504,6 +2535,9 @@
           },
           {
             "$ref": "#/components/schemas/InvitationRequired"
+          },
+          {
+            "$ref": "#/components/schemas/ApplicationReceived"
           }
         ]
       },

@@ -7,9 +7,15 @@ using Npgsql;
 using VubesClub.Api.Contracts;
 using VubesClub.Api.Infrastructure;
 using VubesClub.Api.Modules.Payments;
+using VubesClub.Api.Modules.Identity;
 using VubesClub.Api.Persistence;
 
 namespace VubesClub.Verification;
+
+internal sealed class TestSmsCodes : VubesClub.Api.Modules.Identity.ISmsCodes
+{
+    public Task<string> SendAsync(string phone, CancellationToken ct) => Task.FromResult("1111");
+}
 
 internal static class PostgreSqlAcceptance
 {
@@ -44,11 +50,11 @@ internal static class PostgreSqlAcceptance
         var gateway = new TestGateway();
         await using var app = ClubHost.Build(
             ["--environment=Development", "--ConnectionStrings:Club=" + connection,
-             "--DevelopmentSms:Code=1111", "--DevelopmentSms:Phones:0=" + MemberPhone,
-             "--DevelopmentSms:Phones:1=" + ApplicantPhone, "--Security:OtpKey=" + Secrets.RandomToken()],
+             "--Security:OtpKey=" + Secrets.RandomToken()],
             builder =>
             {
                 builder.Services.AddSingleton<IServer>(server);
+                builder.Services.AddSingleton<ISmsCodes, TestSmsCodes>();
                 builder.Services.AddSingleton<IPaymentGateway>(gateway);
                 builder.Logging.ClearProviders();
             });
@@ -71,12 +77,17 @@ internal static class PostgreSqlAcceptance
             Checks.Require(before > 0 && before == await db.Set<ClubEvent>().CountAsync(), "Seed duplicated catalog data.");
         }
 
-        var member = await VerifyOtp(server, new OtpRequest("signIn", MemberPhone, null, null, null));
-        var applicant = await VerifyOtp(server, new OtpRequest("invitation", ApplicantPhone, "AFTERGLOW", "Test Üyesi", true));
-        Checks.Require(applicant.Session.NextAction == "review", "A new application must wait for review.");
-        (await server.Send("GET", Api + "/events", bearer: applicant.Tokens.AccessToken)).Expect(HttpStatusCode.Forbidden);
+        var member = await VerifyOtp(server, new LoginOtp(MemberPhone));
+        await VerifyApplicationOtp(server, new ApplicationOtp(ApplicantPhone, "Test Üyesi", "test@example.com",
+            "Test University", "Engineer", null, null, null, "AFTERGLOW", true));
+        var applicationMember = await db.Set<Member>().SingleAsync(member => member.Phone == ApplicantPhone);
+        Checks.Require(applicationMember.Status == "pending" && applicationMember.Email == "test@example.com",
+            "A verified application must create a pending member with its email.");
+        Checks.Require(await db.Set<ApplicationEntry>().AnyAsync(entry => entry.MemberId == applicationMember.Id &&
+            entry.InvitationId != null && entry.University == "Test University"), "Application profile data was not persisted.");
         await db.Set<Member>().Where(m => m.Phone == ApplicantPhone).ExecuteUpdateAsync(s => s.SetProperty(m => m.Status, "active"));
-        Checks.Passed("seed replay, sign-in and invitation with 1111, pending membership enforcement");
+        var applicant = await VerifyOtp(server, new LoginOtp(ApplicantPhone));
+        Checks.Passed("seed replay, application intake, approval gate and approved sign-in");
 
         await VerifyScreens(server, db, member.Tokens.AccessToken);
 
@@ -188,13 +199,25 @@ internal static class PostgreSqlAcceptance
         Checks.Passed("all screen reads, saved events, follows, introduction replay, ratings, live route and location opt-in/update/revocation");
     }
 
-    private static async Task<VerifiedSession> VerifyOtp(InProcessServer server, OtpRequest request)
+    private static async Task<VerifiedSession> VerifyOtp(InProcessServer server, LoginOtp request)
     {
         var challenge = (await server.Send("POST", Api + "/auth/otp-challenges", request)).Expect(HttpStatusCode.Accepted).Read<Challenge>();
         Checks.Require(challenge.CodeLength == 4, "Expected four-digit OTP.");
         var path = Api + "/auth/otp-challenges/" + challenge.ChallengeId + "/verify";
         (await server.Send("POST", path, new VerifyRequest("0000"))).Expect(HttpStatusCode.UnprocessableEntity);
         return (await server.Send("POST", path, new VerifyRequest("1111"))).Expect(HttpStatusCode.OK).Read<VerifiedSession>();
+    }
+
+    private static async Task VerifyApplicationOtp(InProcessServer server, ApplicationOtp request)
+    {
+        var challenge = (await server.Send("POST", Api + "/auth/application-otp-challenges", request))
+            .Expect(HttpStatusCode.Accepted).Read<Challenge>();
+        Checks.Require(challenge.CodeLength == 4, "Expected four-digit invitation OTP.");
+        var path = Api + "/auth/otp-challenges/" + challenge.ChallengeId + "/verify";
+        (await server.Send("POST", path, new VerifyRequest("0000"))).Expect(HttpStatusCode.UnprocessableEntity);
+        var result = (await server.Send("POST", path, new VerifyRequest("1111")))
+            .Expect(HttpStatusCode.OK).Read<ApplicationReceived>();
+        Checks.Require(result.NextAction == "applicationReceived", "Application verification did not finish in review state.");
     }
 
     private static async Task<EventVersion> MakeEvent(ClubDb db)

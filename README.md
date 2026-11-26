@@ -16,7 +16,9 @@ ASPNETCORE_ENVIRONMENT=Development ~/.dotnet/dotnet run --launch-profile VubesCl
 
 API http://localhost:5080 adresindedir. Debug iOS Simulator bu adresi kullanır. Fiziksel iPhone için VUBES_API_BASE_URL, telefonun erişebildiği API adresine ayarlanmalıdır. Release dağıtımında HTTPS API adresi gerekir.
 
-Geliştirme üyesi +905555555555, OTP 1111. Davet senaryosu +905555555556 ve AFTERGLOW ile açılır. Başvuru onay bekleyen üyelik oluşturur. Geliştirme OTP'si yalnız yapılandırılmış numaralar ve Development ortamında çalışır. Üretim için gerçek SMS adaptörü ve kalıcı Security:OtpKey gerekir.
+Mevcut üyeler GSM ve OTP ile giriş yapar. Yeni üyeler altı adımlı başvuruda GSM doğrulamasını tamamlar; davet kodu isteğe bağlıdır. Telefonu doğrulanan başvuru `pending` durumunda `member` ve `application_entry` kayıtları oluşturur. Studio üyeler ekranı e-posta ve başvuru profilini gösterir; yalnız Studio üzerinden `active` yapılan üyeler giriş yapabilir.
+
+SMS sağlayıcısı `ISmsCodes` adaptör sınırındadır. Geçici test OTP'si sunucuda `Identity:AllowFixedOtp=true` ile açılır; bu modda SMS gönderilmez ve her OTP challenge'ı `1111` ile doğrulanır. Bu ayarı gerçek kullanıcıların erişebildiği bir ortamda açmayın. Ayar kapalıyken yapılandırılmış bir sağlayıcı yoksa OTP endpoint'i `503 SMS_UNAVAILABLE` döndürür. `Security:OtpKey` en az 32 UTF-8 bayt olmalıdır.
 
 ## Örnek içerik ve görseller
 
