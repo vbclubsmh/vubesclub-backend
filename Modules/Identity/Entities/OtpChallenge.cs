@@ -10,6 +10,8 @@ public sealed class OtpChallenge
     public string? Email { get; set; }
     public string? University { get; set; }
     public string? JobTitle { get; set; }
+    public int? HeightCm { get; set; }
+    public int? WeightKg { get; set; }
     public string? Workplace { get; set; }
     public string? Instagram { get; set; }
     public string? LinkedIn { get; set; }

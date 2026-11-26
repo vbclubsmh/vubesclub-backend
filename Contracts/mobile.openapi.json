@@ -2374,6 +2374,8 @@
           "email": { "type": "string", "format": "email", "maxLength": 254 },
           "university": { "type": "string", "minLength": 1, "maxLength": 160 },
           "jobTitle": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "heightCm": { "type": "integer", "minimum": 100, "maximum": 250 },
+          "weightKg": { "type": "integer", "minimum": 30, "maximum": 300 },
           "workplace": { "type": ["string", "null"], "maxLength": 160 },
           "instagram": { "type": ["string", "null"], "maxLength": 100 },
           "linkedIn": { "type": ["string", "null"], "maxLength": 300 },
@@ -2389,6 +2391,8 @@
           "email",
           "university",
           "jobTitle",
+          "heightCm",
+          "weightKg",
           "adultDeclared"
         ],
         "additionalProperties": false

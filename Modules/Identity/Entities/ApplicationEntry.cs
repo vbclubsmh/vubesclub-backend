@@ -9,6 +9,8 @@ public sealed class ApplicationEntry
     public DateTime AdultDeclaredAt { get; set; }
     public required string University { get; set; }
     public required string JobTitle { get; set; }
+    public int? HeightCm { get; set; }
+    public int? WeightKg { get; set; }
     public string? Workplace { get; set; }
     public string? Instagram { get; set; }
     public string? LinkedIn { get; set; }

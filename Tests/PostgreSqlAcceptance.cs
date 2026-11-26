@@ -79,13 +79,16 @@ internal static class PostgreSqlAcceptance
 
         var member = await VerifyOtp(server, new LoginOtp(MemberPhone));
         await VerifyApplicationOtp(server, new ApplicationOtp(ApplicantPhone, "Test Üyesi", "test@example.com",
-            "Test University", "Engineer", null, null, null, "AFTERGLOW", true));
+            "Test University", "Engineer", 178, 72, null, null, null, "AFTERGLOW", true));
         var applicationMember = await db.Set<Member>().SingleAsync(member => member.Phone == ApplicantPhone);
         Checks.Require(applicationMember.Status == "pending" && applicationMember.Email == "test@example.com",
             "A verified application must create a pending member with its email.");
         Checks.Require(await db.Set<ApplicationEntry>().AnyAsync(entry => entry.MemberId == applicationMember.Id &&
             entry.InvitationId != null && entry.University == "Test University"), "Application profile data was not persisted.");
         await db.Set<Member>().Where(m => m.Phone == ApplicantPhone).ExecuteUpdateAsync(s => s.SetProperty(m => m.Status, "active"));
+        // The 60 second resend window of the application code would otherwise throttle the first sign-in.
+        await db.Set<OtpChallenge>().Where(c => c.Phone == ApplicantPhone)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.ResendAt, DateTime.UtcNow.AddMinutes(-1)));
         var applicant = await VerifyOtp(server, new LoginOtp(ApplicantPhone));
         Checks.Passed("seed replay, application intake, approval gate and approved sign-in");
 

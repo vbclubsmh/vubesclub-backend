@@ -34,9 +34,11 @@ CREATE TABLE application_entry (
     adult_declared_at timestamptz NOT NULL,
     university text NOT NULL,
     job_title text NOT NULL,
+    height_cm integer,
+    weight_kg integer,
     workplace text,
     instagram text,
-    linkedin text,
+    linked_in text,
     submitted_at timestamptz NOT NULL
 );
 
@@ -48,9 +50,11 @@ CREATE TABLE otp_challenge (
     email text,
     university text,
     job_title text,
+    height_cm integer,
+    weight_kg integer,
     workplace text,
     instagram text,
-    linkedin text,
+    linked_in text,
     digest text NOT NULL,
     expires timestamptz NOT NULL,
     resend_at timestamptz NOT NULL,

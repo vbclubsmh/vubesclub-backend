@@ -17,7 +17,7 @@ public sealed class MembershipApplications : Migration
             ADD COLUMN IF NOT EXISTS job_title text,
             ADD COLUMN IF NOT EXISTS workplace text,
             ADD COLUMN IF NOT EXISTS instagram text,
-            ADD COLUMN IF NOT EXISTS linkedin text;
+            ADD COLUMN IF NOT EXISTS linked_in text;
 
         ALTER TABLE application_entry ALTER COLUMN invitation_id DROP NOT NULL;
         ALTER TABLE application_entry
@@ -25,7 +25,7 @@ public sealed class MembershipApplications : Migration
             ADD COLUMN IF NOT EXISTS job_title text NOT NULL DEFAULT 'Not provided',
             ADD COLUMN IF NOT EXISTS workplace text,
             ADD COLUMN IF NOT EXISTS instagram text,
-            ADD COLUMN IF NOT EXISTS linkedin text,
+            ADD COLUMN IF NOT EXISTS linked_in text,
             ADD COLUMN IF NOT EXISTS submitted_at timestamptz NOT NULL DEFAULT now();
         ALTER TABLE application_entry ALTER COLUMN university DROP DEFAULT;
         ALTER TABLE application_entry ALTER COLUMN job_title DROP DEFAULT;

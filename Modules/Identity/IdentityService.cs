@@ -25,6 +25,7 @@ public sealed class IdentityService(
         if (!request.AdultDeclared || string.IsNullOrWhiteSpace(request.FullName) || request.FullName.Length > 150 ||
             !IsPhone(request.Phone) ||
             !IsEmail(request.Email) || !RequiredText(request.University, 160) || !RequiredText(request.JobTitle, 120) ||
+            request.HeightCm is < 100 or > 250 || request.WeightKg is < 30 or > 300 ||
             !Fits(request.Workplace, 160) || !Fits(request.Instagram, 100) || !Fits(request.LinkedIn, 300))
             throw ApiFault.Invalid("Üyelik bilgilerini kontrol edin.");
 
@@ -77,6 +78,8 @@ public sealed class IdentityService(
             Email = application?.Email.Trim().ToLowerInvariant(),
             University = application?.University.Trim(),
             JobTitle = application?.JobTitle.Trim(),
+            HeightCm = application?.HeightCm,
+            WeightKg = application?.WeightKg,
             Workplace = EmptyToNull(application?.Workplace),
             Instagram = EmptyToNull(application?.Instagram),
             LinkedIn = EmptyToNull(application?.LinkedIn),
@@ -146,8 +149,13 @@ public sealed class IdentityService(
                 Visibility = "private"
             };
             db.Add(member);
-            if (invite is not null) invite.UsedBy = member.Id;
+            // The member row must exist before the invitation can reference it.
             await db.SaveChangesAsync(ct);
+            if (invite is not null)
+            {
+                invite.UsedBy = member.Id;
+                await db.SaveChangesAsync(ct);
+            }
             applicationCreated = true;
 
             db.Add(new ApplicationEntry
@@ -157,6 +165,8 @@ public sealed class IdentityService(
                 AdultDeclaredAt = now,
                 University = challenge.University!,
                 JobTitle = challenge.JobTitle!,
+                HeightCm = challenge.HeightCm,
+                WeightKg = challenge.WeightKg,
                 Workplace = challenge.Workplace,
                 Instagram = challenge.Instagram,
                 LinkedIn = challenge.LinkedIn,

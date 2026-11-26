@@ -6,6 +6,8 @@ public sealed record ApplicationOtp(
     string Email,
     string University,
     string JobTitle,
+    int HeightCm,
+    int WeightKg,
     string? Workplace,
     string? Instagram,
     string? LinkedIn,
