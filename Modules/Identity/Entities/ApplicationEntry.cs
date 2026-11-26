@@ -14,5 +14,6 @@ public sealed class ApplicationEntry
     public string? Workplace { get; set; }
     public string? Instagram { get; set; }
     public string? LinkedIn { get; set; }
+    public DateOnly? BirthDate { get; set; }
     public DateTime SubmittedAt { get; set; }
 }

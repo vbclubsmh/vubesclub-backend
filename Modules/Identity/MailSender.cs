@@ -6,8 +6,15 @@ using VubesClub.Api.Infrastructure;
 
 namespace VubesClub.Api.Modules.Identity;
 
+/// <summary>E-posta gönderimi; testlerde sahte uygulamayla değiştirilir.</summary>
+public interface IMailSender
+{
+    bool IsConfigured { get; }
+    Task SendAsync(string to, string? toName, string subject, string html, string text, CancellationToken ct);
+}
+
 /// <summary>SMTP ile e-posta gönderir (IONOS: smtp.ionos.com, 587 STARTTLS).</summary>
-public sealed class MailSender(IConfiguration configuration, ILogger<MailSender> logger)
+public sealed class MailSender(IConfiguration configuration, ILogger<MailSender> logger) : IMailSender
 {
     private string? Host => configuration["Mail:SmtpHost"];
     private string? User => configuration["Mail:User"];
@@ -27,20 +34,27 @@ public sealed class MailSender(IConfiguration configuration, ILogger<MailSender>
         message.Subject = subject;
         message.Body = new BodyBuilder { HtmlBody = html, TextBody = text }.ToMessageBody();
 
-        try
+        // Geçici bağlantı aksaklıklarına karşı bir kez daha denenir.
+        for (var attempt = 1; ; attempt++)
         {
-            using var client = new SmtpClient { Timeout = 15000 };
-            var port = configuration.GetValue<int?>("Mail:SmtpPort") ?? 587;
-            await client.ConnectAsync(Host, port, port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, ct);
-            await client.AuthenticateAsync(User, Password, ct);
-            await client.SendAsync(FormatOptions.Default, new SendRequest(message), ct);
-            await client.DisconnectAsync(true, ct);
-        }
-        catch (Exception failure) when (failure is not OperationCanceledException)
-        {
-            // Alıcı adresi ve kod günlüğe yazılmaz.
-            logger.LogError(failure, "Giriş kodu e-postası gönderilemedi ({Type})", failure.GetType().Name);
-            throw new ApiFault(503, "EMAIL_UNAVAILABLE", "Kod şu anda gönderilemedi. Biraz sonra tekrar deneyin.");
+            try
+            {
+                using var client = new SmtpClient { Timeout = 15000 };
+                var port = configuration.GetValue<int?>("Mail:SmtpPort") ?? 587;
+                await client.ConnectAsync(Host, port, port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, ct);
+                await client.AuthenticateAsync(User, Password, ct);
+                await client.SendAsync(FormatOptions.Default, new SendRequest(message), ct);
+                await client.DisconnectAsync(true, ct);
+                return;
+            }
+            catch (Exception failure) when (failure is not OperationCanceledException)
+            {
+                // Alıcı adresi ve kod günlüğe yazılmaz.
+                logger.LogError(failure, "Giriş kodu e-postası gönderilemedi ({Type}, deneme {Attempt})", failure.GetType().Name, attempt);
+                if (attempt >= 2 || failure is AuthenticationException)
+                    throw new ApiFault(503, "EMAIL_UNAVAILABLE", "Kod şu anda gönderilemedi. Biraz sonra tekrar deneyin.");
+                await Task.Delay(1500, ct);
+            }
         }
     }
 }

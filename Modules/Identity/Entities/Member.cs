@@ -11,4 +11,8 @@ public sealed class Member
     public string? Avatar { get; set; }
     public string? Cover { get; set; }
     public required string Visibility { get; set; }
+    public int? HeightCm { get; set; }
+    public int? WeightKg { get; set; }
+    public string? ClothingSize { get; set; }
+    public DateOnly? BirthDate { get; set; }
 }

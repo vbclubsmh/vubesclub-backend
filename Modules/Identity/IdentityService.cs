@@ -27,6 +27,7 @@ public sealed class IdentityService(
             !IsPhone(request.Phone) ||
             !IsEmail(request.Email) || !RequiredText(request.University, 160) || !RequiredText(request.JobTitle, 120) ||
             request.HeightCm is < 100 or > 250 || request.WeightKg is < 30 or > 300 ||
+            !ProfileService.ValidBirthDate(request.BirthDate, DateOnly.FromDateTime(Now)) ||
             !Fits(request.Workplace, 160) || !Fits(request.Instagram, 100) || !Fits(request.LinkedIn, 300))
             throw ApiFault.Invalid("Üyelik bilgilerini kontrol edin.");
 
@@ -81,6 +82,7 @@ public sealed class IdentityService(
             JobTitle = application?.JobTitle.Trim(),
             HeightCm = application?.HeightCm,
             WeightKg = application?.WeightKg,
+            BirthDate = application?.BirthDate,
             Workplace = EmptyToNull(application?.Workplace),
             Instagram = EmptyToNull(application?.Instagram),
             LinkedIn = EmptyToNull(application?.LinkedIn),
@@ -143,7 +145,7 @@ public sealed class IdentityService(
             challenge.Attempts++;
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            throw ApiFault.Invalid("Doğrulama kodu geçersiz.");
+            throw new ApiFault(422, "OTP_INVALID", "Doğrulama kodu geçersiz.");
         }
 
         var member = await db.Set<Member>().SingleOrDefaultAsync(m => m.Phone == challenge.Phone, ct);
@@ -165,7 +167,10 @@ public sealed class IdentityService(
                 Email = challenge.Email,
                 FullName = challenge.FullName!,
                 Status = "pending",
-                Visibility = "private"
+                Visibility = "private",
+                HeightCm = challenge.HeightCm,
+                WeightKg = challenge.WeightKg,
+                BirthDate = challenge.BirthDate
             };
             db.Add(member);
             // The member row must exist before the invitation can reference it.
@@ -186,6 +191,7 @@ public sealed class IdentityService(
                 JobTitle = challenge.JobTitle!,
                 HeightCm = challenge.HeightCm,
                 WeightKg = challenge.WeightKg,
+                BirthDate = challenge.BirthDate,
                 Workplace = challenge.Workplace,
                 Instagram = challenge.Instagram,
                 LinkedIn = challenge.LinkedIn,

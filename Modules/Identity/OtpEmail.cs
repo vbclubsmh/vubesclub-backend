@@ -2,16 +2,32 @@ using System.Net;
 
 namespace VubesClub.Api.Modules.Identity;
 
-/// <summary>Giriş kodu e-postası: Afterglow siyah/krem teması, Türkçe.</summary>
+/// <summary>Kodun hangi işlem için istendiği; e-postanın konusu ve açıklaması buna göre değişir.</summary>
+public enum OtpPurpose { Login, EmailChange, PhoneChange }
+
+/// <summary>Doğrulama kodu e-postası: Afterglow siyah/krem teması, Türkçe.</summary>
 public static class OtpEmail
 {
-    public static string Subject(string code) => $"Vubes Club giriş kodun: {code}";
+    public static string Subject(string code, OtpPurpose purpose = OtpPurpose.Login) => purpose switch
+    {
+        OtpPurpose.EmailChange => $"Vubes Club e-posta doğrulama kodun: {code}",
+        OtpPurpose.PhoneChange => $"Vubes Club telefon değişikliği kodun: {code}",
+        _ => $"Vubes Club giriş kodun: {code}"
+    };
 
-    public static string Text(string? name, string code, int minutes) =>
+    private static string Lead(OtpPurpose purpose) => purpose switch
+    {
+        OtpPurpose.EmailChange => "Yeni e-posta adresini doğrulamak için tek kullanımlık kodun aşağıda.",
+        OtpPurpose.PhoneChange => "Telefon numaranı değiştirmek için tek kullanımlık kodun aşağıda.",
+        _ => "Vubes Club'a giriş için tek kullanımlık kodun aşağıda."
+    };
+
+    public static string Text(string? name, string code, int minutes, OtpPurpose purpose = OtpPurpose.Login) =>
         $"""
         {Greeting(name)}
 
-        Vubes Club giriş kodun: {code}
+        {Lead(purpose)}
+        Kod: {code}
 
         Bu kod {minutes} dakika geçerli. Kodu kimseyle paylaşma.
         Bu isteği sen yapmadıysan bu e-postayı yok sayabilirsin.
@@ -19,7 +35,7 @@ public static class OtpEmail
         Vubes Club · More than fitness.
         """;
 
-    public static string Html(string? name, string code, int minutes, string logoUrl)
+    public static string Html(string? name, string code, int minutes, string logoUrl, OtpPurpose purpose = OtpPurpose.Login)
     {
         // Rakamlar görsel: Gmail (iOS) açık renkli metni koyu modda koyulaştırıyor, görselleri ise değiştirmiyor.
         var assets = logoUrl[..(logoUrl.LastIndexOf('/') + 1)] + "mail/";
@@ -51,7 +67,7 @@ public static class OtpEmail
               </td></tr>
               <tr><td {{card}}border:1px solid #454c44;border-radius:16px;padding:36px 28px;">
                 <p style="margin:0 0 6px;font:300 28px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#a39e90;letter-spacing:-0.5px;">{{WebUtility.HtmlEncode(Greeting(name))}}</p>
-                <p style="margin:0 0 26px;font:400 15px/1.55 Helvetica,Arial,sans-serif;color:#9a9486;">Vubes Club'a giriş için tek kullanımlık kodun aşağıda.</p>
+                <p style="margin:0 0 26px;font:400 15px/1.55 Helvetica,Arial,sans-serif;color:#9a9486;">{{WebUtility.HtmlEncode(Lead(purpose))}}</p>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
                   <td align="center" {{page}}border:1px solid #454c44;border-radius:12px;padding:22px 8px;">
                     <table role="presentation" align="center" cellpadding="0" cellspacing="0"><tr>{{digits}}</tr></table>

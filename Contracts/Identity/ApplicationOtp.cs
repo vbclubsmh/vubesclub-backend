@@ -8,6 +8,7 @@ public sealed record ApplicationOtp(
     string JobTitle,
     int HeightCm,
     int WeightKg,
+    DateOnly BirthDate,
     string? Workplace,
     string? Instagram,
     string? LinkedIn,

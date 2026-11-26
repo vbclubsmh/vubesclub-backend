@@ -19,6 +19,23 @@ internal sealed class TestSmsCodes : VubesClub.Api.Modules.Identity.ISmsCodes
         Task.FromResult(new VubesClub.Api.Modules.Identity.OtpDispatch("111111", "test", 6));
 }
 
+/// <summary>Gönderilen e-postaları saklar; testler kodu konu satırından okur.</summary>
+internal sealed class Mailbox : VubesClub.Api.Modules.Identity.IMailSender
+{
+    public bool IsConfigured => true;
+    public string? LastTo { get; private set; }
+    public string? LastSubject { get; private set; }
+    public int Count { get; private set; }
+
+    public string LastCode => System.Text.RegularExpressions.Regex.Match(LastSubject ?? "", @"(\d{6})$").Groups[1].Value;
+
+    public Task SendAsync(string to, string? toName, string subject, string html, string text, CancellationToken ct)
+    {
+        LastTo = to; LastSubject = subject; Count++;
+        return Task.CompletedTask;
+    }
+}
+
 internal static class PostgreSqlAcceptance
 {
     private const string Api = "/api/v1";
@@ -50,6 +67,7 @@ internal static class PostgreSqlAcceptance
     {
         var server = new InProcessServer();
         var gateway = new TestGateway();
+        var mailbox = new Mailbox();
         await using var app = ClubHost.Build(
             ["--environment=Development", "--ConnectionStrings:Club=" + connection,
              "--Security:OtpKey=" + Secrets.RandomToken(), "--Identity:AllowFixedOtp=false"],
@@ -57,6 +75,7 @@ internal static class PostgreSqlAcceptance
             {
                 builder.Services.AddSingleton<IServer>(server);
                 builder.Services.AddSingleton<ISmsCodes, TestSmsCodes>();
+                builder.Services.AddSingleton<VubesClub.Api.Modules.Identity.IMailSender>(mailbox);
                 builder.Services.AddSingleton<IPaymentGateway>(gateway);
                 builder.Logging.ClearProviders();
             });
@@ -81,8 +100,13 @@ internal static class PostgreSqlAcceptance
 
         var member = await VerifyOtp(server, new LoginOtp(MemberPhone));
         await VerifyApplicationOtp(server, new ApplicationOtp(ApplicantPhone, "Test Üyesi", "test@example.com",
-            "Test University", "Engineer", 178, 72, null, null, null, "AFTERGLOW", true));
+            "Test University", "Engineer", 178, 72, new DateOnly(1995, 3, 14), null, null, null, "AFTERGLOW", true));
         var applicationMember = await db.Set<Member>().SingleAsync(member => member.Phone == ApplicantPhone);
+        Checks.Require(applicationMember.BirthDate == new DateOnly(1995, 3, 14) && applicationMember.HeightCm == 178 && applicationMember.WeightKg == 72,
+            "Application body data must be stored on the member.");
+        foreach (var birth in new[] { default(DateOnly), DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-17), DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-120) })
+            (await server.Send("POST", Api + "/auth/application-otp-challenges", new ApplicationOtp("+905557770009", "Genç Aday", "genc@example.com",
+                "Okul", "Öğrenci", 170, 60, birth, null, null, null, "AFTERGLOW", true))).Expect(HttpStatusCode.UnprocessableEntity);
         Checks.Require(applicationMember.Status == "pending" && applicationMember.Email == "test@example.com",
             "A verified application must create a pending member with its email.");
         Checks.Require(await db.Set<ApplicationEntry>().AnyAsync(entry => entry.MemberId == applicationMember.Id &&
@@ -95,6 +119,7 @@ internal static class PostgreSqlAcceptance
         Checks.Passed("seed replay, application intake, approval gate and approved sign-in");
 
         await VerifyScreens(server, db, member.Tokens.AccessToken);
+        await VerifyProfile(server, db, member.Tokens.AccessToken, mailbox);
 
         var version = await MakeEvent(db);
         string updatedTitle = "SQL ile güncellenen başlık";
@@ -150,6 +175,72 @@ internal static class PostgreSqlAcceptance
         (await server.Send("GET", Api + "/auth/session", bearer: refreshed.AccessToken)).Expect(HttpStatusCode.Unauthorized);
         Checks.Passed("refresh rotates tokens, rejects reuse and logout revokes the session");
         await app.StopAsync();
+    }
+
+    private static async Task VerifyProfile(InProcessServer server, ClubDb db, string token, Mailbox mailbox)
+    {
+        var me = Api + "/me";
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var birth = today.AddYears(-30);
+
+        (await server.Send("PATCH", me, new UpdateProfile(5, null, null, null), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("PATCH", me, new UpdateProfile(null, 500, null, null), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("PATCH", me, new UpdateProfile(null, null, "XXXL", null), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("PATCH", me, new UpdateProfile(null, null, null, today.AddYears(-17)), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        var updated = (await server.Send("PATCH", me, new UpdateProfile(181, 79, "L", birth), token)).Expect(HttpStatusCode.OK).Read<MyProfile>();
+        Checks.Require(updated.HeightCm == 181 && updated.WeightKg == 79 && updated.ClothingSize == "L" && updated.BirthDate == birth,
+            "Profile update was not stored.");
+        (await server.Send("PATCH", me, new UpdateProfile(null, null, null, birth.AddDays(1)), token)).Expect(HttpStatusCode.Conflict);
+        (await server.Send("PATCH", me, new UpdateProfile(null, 80, null, birth), token)).Expect(HttpStatusCode.OK);
+        var partial = (await server.Send("GET", me, bearer: token)).Expect(HttpStatusCode.OK).Read<MyProfile>();
+        Checks.Require(partial.WeightKg == 80 && partial.HeightCm == 181 && partial.ClothingSize == "L", "A partial update must keep other fields.");
+
+        async Task OpenWindow() => await db.Set<ContactChange>().ExecuteUpdateAsync(s => s.SetProperty(c => c.ResendAt, DateTime.UtcNow.AddMinutes(-1)));
+        var contact = me + "/contact-changes";
+
+        // e-posta: kod yeni adrese gider
+        (await server.Send("POST", contact, new ContactChangeRequest(null, null), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("POST", contact, new ContactChangeRequest("a@example.com", "+905559990001"), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("POST", contact, new ContactChangeRequest("bozuk", null), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("POST", contact, new ContactChangeRequest("test@example.com", null), token)).Expect(HttpStatusCode.Conflict);
+        (await server.Send("POST", contact, new ContactChangeRequest(null, "+905559990001"), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        var before = mailbox.Count;
+        var challenge = (await server.Send("POST", contact, new ContactChangeRequest("Yeni.Adres@Example.com", null), token)).Expect(HttpStatusCode.Accepted).Read<Challenge>();
+        Checks.Require(mailbox.Count == before + 1 && mailbox.LastTo == "yeni.adres@example.com" && mailbox.LastSubject!.Contains("e-posta doğrulama"),
+            "The email-change code must be sent to the new address.");
+        (await server.Send("POST", contact, new ContactChangeRequest("baska@example.com", null), token)).Expect(HttpStatusCode.TooManyRequests);
+        var verify = contact + "/" + challenge.ChallengeId + "/verify";
+        (await server.Send("POST", verify, new VerifyRequest("000000"), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("POST", verify, new VerifyRequest(null!), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        var withEmail = (await server.Send("POST", verify, new VerifyRequest(mailbox.LastCode), token)).Expect(HttpStatusCode.OK).Read<MyProfile>();
+        Checks.Require(withEmail.Email == "yeni.adres@example.com", "Verified email change was not applied.");
+        (await server.Send("POST", verify, new VerifyRequest(mailbox.LastCode), token)).Expect(HttpStatusCode.Gone);
+        (await server.Send("POST", contact + "/" + Guid.NewGuid() + "/verify", new VerifyRequest("123456"), token)).Expect(HttpStatusCode.NotFound);
+
+        // telefon: kod mevcut e-postaya gider; başka üyenin numarası reddedilir
+        await OpenWindow();
+        (await server.Send("POST", contact, new ContactChangeRequest(null, ApplicantPhone), token)).Expect(HttpStatusCode.Conflict);
+        (await server.Send("POST", contact, new ContactChangeRequest(null, "05559990001"), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("POST", contact, new ContactChangeRequest(null, MemberPhone), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        var phoneChallenge = (await server.Send("POST", contact, new ContactChangeRequest(null, "+905559990001"), token)).Expect(HttpStatusCode.Accepted).Read<Challenge>();
+        Checks.Require(mailbox.LastTo == "yeni.adres@example.com" && mailbox.LastSubject!.Contains("telefon"), "The phone-change code must go to the current email.");
+        var phoneVerify = contact + "/" + phoneChallenge.ChallengeId;
+        await OpenWindow();
+        (await server.Send("POST", phoneVerify + "/resend", null, token)).Expect(HttpStatusCode.OK);
+        var withPhone = (await server.Send("POST", phoneVerify + "/verify", new VerifyRequest(mailbox.LastCode), token)).Expect(HttpStatusCode.OK).Read<MyProfile>();
+        Checks.Require(withPhone.Phone == "+905559990001" && withPhone.PhoneMasked.EndsWith("0001"), "Verified phone change was not applied.");
+
+        // beş yanlış deneme kodu kilitler
+        await OpenWindow();
+        var locked = (await server.Send("POST", contact, new ContactChangeRequest("kilit@example.com", null), token)).Expect(HttpStatusCode.Accepted).Read<Challenge>();
+        for (var i = 0; i < 5; i++)
+            (await server.Send("POST", contact + "/" + locked.ChallengeId + "/verify", new VerifyRequest("000000"), token)).Expect(HttpStatusCode.UnprocessableEntity);
+        (await server.Send("POST", contact + "/" + locked.ChallengeId + "/verify", new VerifyRequest(mailbox.LastCode), token)).Expect(HttpStatusCode.TooManyRequests);
+
+        // numara eski hâline döner; sonraki testler seed numarasını kullanır
+        await db.Set<Member>().Where(m => m.Phone == "+905559990001").ExecuteUpdateAsync(s => s.SetProperty(m => m.Phone, MemberPhone));
+        await db.Set<Member>().Where(m => m.Phone == MemberPhone).ExecuteUpdateAsync(s => s.SetProperty(m => m.Email, (string?)null));
+        Checks.Passed("profile update, birth-date lock, email/phone change with codes, conflicts, resend and lockout");
     }
 
     private static async Task VerifyScreens(InProcessServer server, ClubDb db, string token)

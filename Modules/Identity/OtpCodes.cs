@@ -6,7 +6,7 @@ namespace VubesClub.Api.Modules.Identity;
 /// Kanal seçimi: test için sabit kod yalnızca izinli numaralarda (liste boşsa yalnızca yerel geliştirmede) geçerlidir;
 /// diğer numaralara 6 haneli rastgele kod e-posta ile gider. SMS sağlayıcısı eklenince buradan seçilir.
 /// </summary>
-public sealed class OtpCodes(IConfiguration configuration, MailSender mail) : ISmsCodes
+public sealed class OtpCodes(IConfiguration configuration, IMailSender mail) : ISmsCodes
 {
     public const int CodeLength = 6;
     public const int LifetimeMinutes = 15;
@@ -15,6 +15,12 @@ public sealed class OtpCodes(IConfiguration configuration, MailSender mail) : IS
         configuration.GetValue<bool>("Identity:AllowFixedOtp") &&
         (configuration.GetSection("Identity:FixedOtpPhones").Get<string[]>() is not { Length: > 0 } allowed ||
          allowed.Contains(phone, StringComparer.Ordinal));
+
+    /// <summary>Sabit kodla çalışan, açıkça listelenmiş demo hesabı (liste boşsa hiçbir hesap demo sayılmaz).</summary>
+    public static bool IsDemo(IConfiguration configuration, string phone) =>
+        configuration.GetValue<bool>("Identity:AllowFixedOtp") &&
+        configuration.GetSection("Identity:FixedOtpPhones").Get<string[]>() is { Length: > 0 } allowed &&
+        allowed.Contains(phone, StringComparer.Ordinal);
 
     public async Task<OtpDispatch> SendAsync(OtpTarget target, CancellationToken ct)
     {

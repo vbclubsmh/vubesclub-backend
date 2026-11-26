@@ -15,6 +15,7 @@ public sealed class OtpChallenge
     public string? Workplace { get; set; }
     public string? Instagram { get; set; }
     public string? LinkedIn { get; set; }
+    public DateOnly? BirthDate { get; set; }
     public required string Digest { get; set; }
     public DateTime Expires { get; set; }
     public DateTime ResendAt { get; set; }

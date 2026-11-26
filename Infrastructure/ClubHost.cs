@@ -19,7 +19,7 @@ public static class ClubHost
 
         builder.Services.AddDbContext<ClubDb>(options => options.UseNpgsql(connection));
         builder.Services.AddSingleton(TimeProvider.System);
-        builder.Services.AddSingleton<MailSender>();
+        builder.Services.AddSingleton<IMailSender, MailSender>();
         builder.Services.AddSingleton<ISmsCodes, OtpCodes>();
         builder.Services.AddSingleton<OtpProtector>();
         builder.Services.AddSingleton<AvatarStore>();
@@ -29,6 +29,7 @@ public static class ClubHost
             builder.Services.AddSingleton<IPaymentGateway, UnconfiguredGateway>();
         builder.Services.AddScoped<Caller>();
         builder.Services.AddScoped<IdentityService>();
+        builder.Services.AddScoped<ProfileService>();
         builder.Services.AddScoped<CatalogQueries>();
         builder.Services.AddScoped<BookingService>();
         builder.Services.AddScoped<PaymentService>();
@@ -42,11 +43,19 @@ public static class ClubHost
         {
             FileProvider = app.Services.GetRequiredService<AvatarStore>().Files,
             RequestPath = "/media/members",
-            OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable"
+            OnPrepareResponse = context =>
+            {
+                context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+                context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            }
         });
         app.UseStaticFiles(new StaticFileOptions
         {
-            OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=3600"
+            OnPrepareResponse = context =>
+            {
+                context.Context.Response.Headers.CacheControl = "public,max-age=3600";
+                context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            }
         });
         app.UseRouting();
         app.UseClubAccess();
