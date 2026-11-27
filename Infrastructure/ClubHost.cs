@@ -25,6 +25,8 @@ public static class ClubHost
         builder.Services.AddSingleton<AvatarStore>();
         if (builder.Environment.IsDevelopment())
             builder.Services.AddScoped<IPaymentGateway, DevelopmentPaymentGateway>();
+        else if ((builder.Configuration["Payments:Mode"] ?? "placeholder") == "placeholder")
+            builder.Services.AddScoped<IPaymentGateway, PlaceholderPaymentGateway>();
         else
             builder.Services.AddSingleton<IPaymentGateway, UnconfiguredGateway>();
         builder.Services.AddScoped<Caller>();
@@ -32,7 +34,9 @@ public static class ClubHost
         builder.Services.AddScoped<ProfileService>();
         builder.Services.AddScoped<CatalogQueries>();
         builder.Services.AddScoped<BookingService>();
+        builder.Services.AddScoped<BookingMailer>();
         builder.Services.AddScoped<PaymentService>();
+        builder.Services.AddScoped<FieldCheckInService>();
         builder.Services.AddScoped<CommunityService>();
         builder.Services.AddScoped<LiveMapService>();
 
@@ -81,14 +85,12 @@ public static class ClubHost
             return Results.Ok();
         });
 
-        if (app.Environment.IsDevelopment())
-        {
-            app.MapGet("/development/event-terms/v1", () => Results.Text(
-                "Vubes Club geliştirme ortamı · Örnek etkinlik katılım koşulları (v1)\n\n" +
-                "Bu ortamda ödeme simülasyonu kullanılır. Kart bilgisi alınmaz ve ücret tahsil edilmez. " +
-                "Onayınız seçtiğiniz etkinliğin gösterilen programı ve toplam tutarı için test kaydı oluşturur.",
-                "text/plain; charset=utf-8"));
-        }
+        app.MapGet("/development/event-terms/v1", () => Results.Text(
+            "Vubes Club · Etkinlik katılım koşulları (v1)\n\n" +
+            "Katılımınız seçtiğiniz etkinliğin gösterilen programı için kaydedilir. Ödeme altyapısı devreye alınana kadar " +
+            "katılım ödeme alınmadan kesinleştirilir ve kart bilgisi alınmaz. Etkinlik girişinde e-postanızdaki veya " +
+            "uygulamadaki QR kodunu standımızda okutmanız gerekir.",
+            "text/plain; charset=utf-8"));
 
         app.MapGet("/health/live", () => Results.Ok());
 

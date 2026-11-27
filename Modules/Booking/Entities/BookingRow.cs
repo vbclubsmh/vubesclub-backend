@@ -10,4 +10,6 @@ public sealed class BookingRow
     public Guid PaymentId { get; set; }
     public required string Status { get; set; }
     public required string Attendance { get; set; }
+    public DateTime? CheckedInAt { get; set; }
+    public DateTime? ConfirmationSentAt { get; set; }
 }

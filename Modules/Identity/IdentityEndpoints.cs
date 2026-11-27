@@ -99,7 +99,7 @@ public static class IdentityEndpoints
 
         return new MyProfile(member.Id, member.FullName, Asset(member.Avatar), Asset(member.Cover),
             "•••• " + member.Phone[^4..], member.Phone, member.Email, member.HeightCm, member.WeightKg,
-            member.ClothingSize, member.BirthDate, member.Status, premium ? "premium" : "standard", trainer);
+            member.ClothingSize, member.BirthDate, member.Status, premium ? "premium" : "standard", trainer, member.FieldStaff);
     }
 
     private static Media? Asset(string? url) => url == null ? null : new Media(url, null);

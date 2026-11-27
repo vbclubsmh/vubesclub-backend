@@ -2683,6 +2683,93 @@
           }
         }
       }
+    },
+    "/field/check-ins": {
+      "post": {
+        "tags": [
+          "Saha"
+        ],
+        "operationId": "checkIn",
+        "summary": "Stantta okutulan katılım QR kodunu üyeyle eşleştirip girişi kaydet. Yalnız saha görevlisi veya etkinliğin organizatörü.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaynak bulunamadı veya görünmüyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Durum, sürüm veya kapasite çakışması",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Doğrulama hatası",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInRequest"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4351,6 +4438,9 @@
           "trainerRole": {
             "type": "boolean"
           },
+          "fieldStaff": {
+            "type": "boolean"
+          },
           "phone": {
             "type": "string",
             "pattern": "^\\+[1-9][0-9]{7,14}$"
@@ -4410,6 +4500,7 @@
           "membershipState",
           "tier",
           "trainerRole",
+          "fieldStaff",
           "phone",
           "email",
           "heightCm",
@@ -4646,6 +4737,66 @@
           "trainers",
           "forYou",
           "ratedExperiences"
+        ],
+        "additionalProperties": false
+      },
+      "CheckInRequest": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "payload"
+        ],
+        "additionalProperties": false
+      },
+      "CheckInResult": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "memberName": {
+            "type": "string"
+          },
+          "memberAvatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "eventTitle": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "checkedIn",
+              "alreadyCheckedIn"
+            ]
+          },
+          "checkedInAt": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "required": [
+          "bookingId",
+          "memberName",
+          "memberAvatar",
+          "eventId",
+          "eventTitle",
+          "outcome",
+          "checkedInAt"
         ],
         "additionalProperties": false
       }

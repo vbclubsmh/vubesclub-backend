@@ -7,7 +7,8 @@ using BookingEntity = VubesClub.Api.Persistence.BookingRow;
 
 namespace VubesClub.Api.Modules.Payments;
 
-public sealed class PaymentService(ClubDb db, BookingService bookings, IPaymentGateway gateway, TimeProvider clock)
+public sealed class PaymentService(ClubDb db, BookingService bookings, IPaymentGateway gateway, TimeProvider clock,
+    BookingMailer mailer)
 {
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
 
@@ -130,6 +131,7 @@ public sealed class PaymentService(ClubDb db, BookingService bookings, IPaymentG
             await tx.CommitAsync(ct);
         }
         await CompleteRefund(notice.PaymentId, ct);
+        await mailer.SendConfirmation(notice.PaymentId, ct);
     }
 
     private async Task Transition(PaymentRow payment, HoldRow hold, VerifiedSettlement notice, CancellationToken ct)

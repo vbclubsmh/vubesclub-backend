@@ -15,4 +15,5 @@ public sealed class Member
     public int? WeightKg { get; set; }
     public string? ClothingSize { get; set; }
     public DateOnly? BirthDate { get; set; }
+    public bool FieldStaff { get; set; }
 }

@@ -6,9 +6,9 @@ namespace VubesClub.Api.Modules.Payments;
 
 // Development checkout simulates a successful payment when the member accepts the order.
 // Its receipt can be reconstructed from the persisted order after a restart.
-public sealed class DevelopmentPaymentGateway(ClubDb db) : IPaymentGateway
+public class DevelopmentPaymentGateway(ClubDb db) : IPaymentGateway
 {
-    public string Name => "development";
+    public virtual string Name => "development";
     public bool IsConfigured => true;
 
     public async Task<CheckoutSession> StartAsync(EventCharge charge, CancellationToken ct)

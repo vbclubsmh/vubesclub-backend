@@ -159,6 +159,22 @@ internal static class PostgreSqlAcceptance
         Checks.Require(bookings.Items.Count(b => b.Id == pass.BookingId) == 1, "Expected exactly one confirmed booking.");
         Checks.Passed("concurrent last seat, reservation and payment replay, repeated webhook, booking and owner-only pass");
 
+        var checkInPath = Api + "/field/check-ins";
+        var scanBody = new CheckInRequest(pass.QrPayload);
+        (await server.Send("POST", checkInPath, scanBody, winningToken)).Expect(HttpStatusCode.Forbidden);
+        var scannerId = (await db.Set<VubesClub.Api.Persistence.BookingRow>().AsNoTracking().SingleAsync(b => b.Id == pass.BookingId)).MemberId;
+        var staffToken = tokens[1 - winner];
+        var staffId = (await server.Send("GET", Api + "/me", bearer: staffToken)).Expect(HttpStatusCode.OK).Read<MyProfile>().MemberId;
+        Checks.Require(staffId != scannerId, "Test members must differ.");
+        await db.Set<Member>().Where(m => m.Id == staffId).ExecuteUpdateAsync(s => s.SetProperty(m => m.FieldStaff, true));
+        (await server.Send("POST", checkInPath, new CheckInRequest("garbage"), staffToken)).Expect((HttpStatusCode)422);
+        var scanned = (await server.Send("POST", checkInPath, scanBody, staffToken)).Expect(HttpStatusCode.OK).Read<CheckInResult>();
+        Checks.Require(scanned.Outcome == "checkedIn" && scanned.BookingId == pass.BookingId, "QR check-in did not match the member.");
+        var scannedAgain = (await server.Send("POST", checkInPath, scanBody, staffToken)).Expect(HttpStatusCode.OK).Read<CheckInResult>();
+        Checks.Require(scannedAgain.Outcome == "alreadyCheckedIn", "Second scan must not check in twice.");
+        Checks.Require((await db.Set<VubesClub.Api.Persistence.BookingRow>().AsNoTracking().SingleAsync(b => b.Id == pass.BookingId)).Attendance == "checkedIn", "Attendance was not recorded.");
+        Checks.Passed("stand QR check-in matches the member once and is restricted to field staff");
+
         var lateEvent = await MakeEvent(db);
         var lateHold = (await server.Send("POST", Api + "/booking-holds", new CreateHold(lateEvent.EventId, lateEvent.Revision), token, "late-seat")).Expect(HttpStatusCode.Created).Read<Hold>();
         var latePayment = await StartPayment(server, lateHold, token, HttpStatusCode.Created);

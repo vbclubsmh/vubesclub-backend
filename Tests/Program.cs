@@ -25,7 +25,7 @@ if (postgres != null)
 
 var server = new InProcessServer();
 await using var app = ClubHost.Build(
-    ["--ConnectionStrings:Club=" + (postgres ?? "Host=localhost;Database=vubes_verification_test")],
+    ["--ConnectionStrings:Club=" + (postgres ?? "Host=localhost;Database=vubes_verification_test"), "--Payments:Mode=unconfigured"],
     builder =>
     {
         builder.Services.AddSingleton<IServer>(server);
@@ -66,6 +66,22 @@ foreach (var endpoint in protectedRoutes)
 }
 Checks.Passed($"{protectedRoutes.Length} protected operations reject an anonymous request in the actual middleware");
 (await server.Send("GET", "/health/live")).Expect(HttpStatusCode.OK);
+
+{
+    var payload = VubesClub.Api.Modules.Booking.PassQr.Payload("abc123");
+    var png = VubesClub.Api.Modules.Booking.PassQr.Png(payload);
+    Checks.Require(png.Length > 200 && png[0] == 0x89 && png[1] == 0x50, "QR image is not a PNG.");
+    Checks.Require(VubesClub.Api.Modules.Booking.PassQr.Nonce(payload) == "abc123" && VubesClub.Api.Modules.Booking.PassQr.Nonce("abc123") == null, "QR payload parsing failed.");
+    var html = VubesClub.Api.Modules.Booking.BookingEmail.Html("Ada Kaya", "Hasdal", "6 Aralık 2026, Pazar · 09:30", "Hasdal", "https://api.vubesclub.com/media/Wordmark.png", "event-qr");
+    var message = VubesClub.Api.Modules.Identity.MailSender.Compose(new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build(),
+        "ada@example.com", "Ada Kaya", "Kaydınız alındı", html, "text",
+        [new VubesClub.Api.Modules.Identity.MailImage("event-qr", "qr.png", png)]);
+    Checks.Require(message.BodyParts.Any(part => part.ContentId == "event-qr" && part.ContentType.MimeType == "image/png") &&
+        message.Body is MimeKit.Multipart topLevel && topLevel.OfType<MimeKit.MultipartRelated>().Any() && html.Contains("cid:event-qr") && html.Contains("Kaydınız alınmıştır"),
+        "Booking e-mail does not embed the QR image: " + message.Body.ContentType.MimeType + " | " + string.Join(",", message.BodyParts.Select(x => x.ContentType.MimeType + "/" + x.ContentId)));
+    if (Environment.GetEnvironmentVariable("VUBES_DUMP_MAIL") is { Length: > 0 } dump) { File.WriteAllText(dump + ".html", html); File.WriteAllBytes(dump + ".png", png); }
+    Checks.Passed("booking e-mail embeds the QR code and the QR payload round-trips");
+}
 
 var gateway = services.GetRequiredService<IPaymentGateway>();
 Checks.Require(!gateway.IsConfigured, "A production payment provider was unexpectedly enabled.");

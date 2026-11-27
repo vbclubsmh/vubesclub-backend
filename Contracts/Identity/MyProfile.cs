@@ -14,4 +14,5 @@ public sealed record MyProfile(
     DateOnly? BirthDate,
     string MembershipState,
     string Tier,
-    bool TrainerRole);
+    bool TrainerRole,
+    bool FieldStaff);

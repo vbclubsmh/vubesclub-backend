@@ -11,7 +11,14 @@ public interface IMailSender
 {
     bool IsConfigured { get; }
     Task SendAsync(string to, string? toName, string subject, string html, string text, CancellationToken ct);
+
+    /// <summary>Satır içi görselli ileti (ör. QR). Desteklemeyen uygulamalar görselsiz gönderir.</summary>
+    Task SendAsync(string to, string? toName, string subject, string html, string text,
+        IReadOnlyList<MailImage> images, CancellationToken ct) => SendAsync(to, toName, subject, html, text, ct);
 }
+
+/// <summary>E-postaya "cid:" ile bağlanan satır içi PNG.</summary>
+public sealed record MailImage(string ContentId, string FileName, byte[] Png);
 
 /// <summary>SMTP ile e-posta gönderir (IONOS: smtp.ionos.com, 587 STARTTLS).</summary>
 public sealed class MailSender(IConfiguration configuration, ILogger<MailSender> logger) : IMailSender
@@ -25,7 +32,8 @@ public sealed class MailSender(IConfiguration configuration, ILogger<MailSender>
 
     /// <summary>İletiyi kurar: gerçek alan adlı Message-ID, otomatik gönderim başlıkları, metin + HTML.</summary>
     public static MimeMessage Compose(
-        IConfiguration configuration, string to, string? toName, string subject, string html, string text)
+        IConfiguration configuration, string to, string? toName, string subject, string html, string text,
+        IReadOnlyList<MailImage>? images = null)
     {
         var from = configuration["Mail:From"] ?? configuration["Mail:User"] ?? "noreply@vubesclub.com";
         var message = new MimeMessage();
@@ -41,15 +49,26 @@ public sealed class MailSender(IConfiguration configuration, ILogger<MailSender>
         message.Headers.Add("X-Auto-Response-Suppress", "All");
         if (configuration["Mail:ReplyTo"] is { Length: > 0 } replyTo)
             message.ReplyTo.Add(MailboxAddress.Parse(replyTo));
-        message.Body = new BodyBuilder { HtmlBody = html, TextBody = text }.ToMessageBody();
+        var body = new BodyBuilder { HtmlBody = html, TextBody = text };
+        foreach (var image in images ?? [])
+        {
+            var resource = body.LinkedResources.Add(image.FileName, image.Png, MimeKit.ContentType.Parse("image/png"));
+            resource.ContentId = image.ContentId;
+            resource.ContentDisposition = new MimeKit.ContentDisposition(MimeKit.ContentDisposition.Inline);
+        }
+        message.Body = body.ToMessageBody();
         return message;
     }
 
-    public async Task SendAsync(string to, string? toName, string subject, string html, string text, CancellationToken ct)
+    public Task SendAsync(string to, string? toName, string subject, string html, string text, CancellationToken ct) =>
+        SendAsync(to, toName, subject, html, text, [], ct);
+
+    public async Task SendAsync(string to, string? toName, string subject, string html, string text,
+        IReadOnlyList<MailImage> images, CancellationToken ct)
     {
         if (!IsConfigured) throw new ApiFault(503, "EMAIL_UNAVAILABLE", "E-posta gönderimi yapılandırılmadı.");
 
-        var message = Compose(configuration, to, toName, subject, html, text);
+        var message = Compose(configuration, to, toName, subject, html, text, images);
 
         // Geçici bağlantı aksaklıklarına karşı bir kez daha denenir.
         for (var attempt = 1; ; attempt++)

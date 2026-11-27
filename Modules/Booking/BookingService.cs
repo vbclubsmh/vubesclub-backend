@@ -152,6 +152,6 @@ public sealed class BookingService(ClubDb db, Caller caller, CatalogQueries cata
             ?? throw ApiFault.Missing();
         return new Pass(id, v.EventId, v.Title, v.Starts, v.TimeZone,
             new MeetingPoint(v.Meeting, v.Directions, v.Latitude is double lat ? new Point(lat, v.Longitude!.Value) : null),
-            pass.Nonce, v.Ends);
+            PassQr.Payload(pass.Nonce), v.Ends);
     }
 }
