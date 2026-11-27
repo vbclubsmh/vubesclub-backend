@@ -2636,6 +2636,53 @@
           }
         }
       }
+    },
+    "/club/feed": {
+      "get": {
+        "tags": [
+          "Club"
+        ],
+        "operationId": "getClubFeed",
+        "summary": "Takip edilen ve Studio'da bağlanan PT'lerin etkinlik akışını getir.",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "x-access": "active",
+        "responses": {
+          "200": {
+            "description": "Başarılı.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubFeed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum doğrulanamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "İşlem yetkisi yok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4496,6 +4543,99 @@
           }
         },
         "description": "Tam olarak biri dolu olmalı.",
+        "additionalProperties": false
+      },
+      "TrainerRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Media"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "avatar"
+        ],
+        "additionalProperties": false
+      },
+      "FeedTrainer": {
+        "type": "object",
+        "properties": {
+          "trainer": {
+            "$ref": "#/components/schemas/TrainerCard"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "following",
+              "linked",
+              "both"
+            ]
+          }
+        },
+        "required": [
+          "trainer",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "FeedEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/EventCard"
+          },
+          "organizer": {
+            "$ref": "#/components/schemas/TrainerRef"
+          }
+        },
+        "required": [
+          "event",
+          "organizer"
+        ],
+        "additionalProperties": false
+      },
+      "ClubFeed": {
+        "type": "object",
+        "properties": {
+          "trainers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedTrainer"
+            }
+          },
+          "forYou": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedEvent"
+            }
+          },
+          "ratedExperiences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedEvent"
+            }
+          }
+        },
+        "required": [
+          "trainers",
+          "forYou",
+          "ratedExperiences"
+        ],
         "additionalProperties": false
       }
     },

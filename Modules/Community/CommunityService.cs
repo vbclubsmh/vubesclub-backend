@@ -25,6 +25,42 @@ public sealed class CommunityService(ClubDb db, Caller caller, CatalogQueries ca
         return new TrainerPage(rows.OrderBy(t => t.Id).Take(page.Limit).ToArray(), page.Next(rows.Count));
     }
 
+    public async Task<ClubFeed> Feed(CancellationToken ct)
+    {
+        if (!await catalog.EligibleEvents().AnyAsync(ct)) throw ApiFault.Forbidden();
+
+        var followed = await db.Set<Follow>().Where(f => f.MemberId == caller.MemberId)
+            .Select(f => f.TrainerId).ToListAsync(ct);
+        var linked = await db.Set<TrainerLink>().Where(l => l.MemberId == caller.MemberId)
+            .Select(l => l.TrainerId).ToListAsync(ct);
+        var wanted = followed.Union(linked).ToList();
+
+        var cards = await catalog.Trainers(Accessible().Where(t => wanted.Contains(t.Id)).OrderBy(t => t.Id)).ToListAsync(ct);
+        var trainers = cards.Select(card => new FeedTrainer(card,
+            followed.Contains(card.Id) && linked.Contains(card.Id) ? "both" : followed.Contains(card.Id) ? "following" : "linked")).ToArray();
+        var ids = cards.Select(c => c.Id).ToList();
+        if (ids.Count == 0) return new ClubFeed(trainers, [], []);
+
+        var owners = await db.Set<ClubEvent>().Where(e => ids.Contains(e.TrainerId))
+            .Select(e => new { e.Id, e.TrainerId }).ToDictionaryAsync(e => e.Id, e => e.TrainerId, ct);
+        var versions = catalog.PublishedVersions().Where(v => owners.Keys.Contains(v.EventId));
+        var now = catalog.Now;
+        var upcoming = await catalog.Cards(versions.Where(v => v.Starts > now)).ToListAsync(ct);
+        var rated = await catalog.Cards(versions.Where(v => v.Ends <= now &&
+            db.Set<RatingRow>().Any(r => r.EventId == v.EventId && r.Moderation == "published"))).ToListAsync(ct);
+
+        var byId = cards.ToDictionary(c => c.Id);
+        FeedEvent Wrap(EventCard e)
+        {
+            var trainer = byId[owners[e.Id]];
+            return new FeedEvent(e, new TrainerRef(trainer.Id, trainer.DisplayName, trainer.Avatar));
+        }
+
+        return new ClubFeed(trainers,
+            upcoming.OrderBy(e => e.StartsAt).Select(Wrap).ToArray(),
+            rated.OrderByDescending(e => e.StartsAt).Select(Wrap).ToArray());
+    }
+
     public async Task<TrainerDetail> Detail(Guid id, CancellationToken ct)
     {
         var trainer = await catalog.Trainers(Accessible().Where(t => t.Id == id)).SingleOrDefaultAsync(ct)

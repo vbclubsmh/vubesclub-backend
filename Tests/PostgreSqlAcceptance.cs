@@ -266,7 +266,17 @@ internal static class PostgreSqlAcceptance
         (await server.Send("PUT", Api + "/me/followed-trainers/" + trainer, bearer: token)).Expect(HttpStatusCode.NoContent);
         var following = (await server.Send("GET", Api + "/club/trainers?followingOnly=true", bearer: token)).Expect(HttpStatusCode.OK).Read<TrainerPage>();
         Checks.Require(following.Items.Any(t => t.Id == trainer), "Follow not persisted.");
+        async Task<ClubFeed> Feed() => (await server.Send("GET", Api + "/club/feed", bearer: token)).Expect(HttpStatusCode.OK).Read<ClubFeed>();
+        var feed = await Feed();
+        Checks.Require(feed.Trainers.Any(t => t.Trainer.Id == trainer && t.Source == "following"), "Feed misses the followed trainer.");
+        Checks.Require(feed.ForYou.Count > 0 && feed.ForYou.All(e => e.Organizer.Id == trainer), "Feed shows events of other trainers.");
+        db.Set<TrainerLink>().Add(new TrainerLink { MemberId = profile.MemberId, TrainerId = trainer });
+        await db.SaveChangesAsync();
+        Checks.Require((await Feed()).Trainers.Any(t => t.Trainer.Id == trainer && t.Source == "both"), "Feed ignores the Studio link.");
         (await server.Send("DELETE", Api + "/me/followed-trainers/" + trainer, bearer: token)).Expect(HttpStatusCode.NoContent);
+        Checks.Require((await Feed()).Trainers.Any(t => t.Trainer.Id == trainer && t.Source == "linked"), "A Studio link alone must show the trainer.");
+        await db.Set<TrainerLink>().Where(l => l.MemberId == profile.MemberId && l.TrainerId == trainer).ExecuteDeleteAsync();
+        Checks.Require((await Feed()).Trainers.All(t => t.Trainer.Id != trainer), "Feed kept an unlinked, unfollowed trainer.");
         var introduction = (await server.Send("PUT", Api + "/me/trainer-introductions/" + trainer, bearer: token)).Expect(HttpStatusCode.OK).Read<Introduction>();
         var replay = (await server.Send("PUT", Api + "/me/trainer-introductions/" + trainer, bearer: token)).Expect(HttpStatusCode.OK).Read<Introduction>();
         Checks.Require(introduction == replay, "Introduction retry duplicated the request.");

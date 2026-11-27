@@ -13,6 +13,7 @@ public static class CommunityEndpoints
         var routes = api.MapGroup("").ForMembers();
         routes.MapGet("/club/trainers", (bool? followingOnly, string? cursor, int? limit, CommunityService service, CancellationToken ct) =>
             service.List(followingOnly, cursor, limit, ct));
+        routes.MapGet("/club/feed", (CommunityService service, CancellationToken ct) => service.Feed(ct));
         routes.MapGet("/club/trainers/{trainerId:guid}", (Guid trainerId, CommunityService service, CancellationToken ct) =>
             service.Detail(trainerId, ct));
         routes.MapPut("/me/followed-trainers/{trainerId:guid}", async (Guid trainerId, CommunityService service, CancellationToken ct) =>
