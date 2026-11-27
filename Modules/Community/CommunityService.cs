@@ -9,13 +9,10 @@ namespace VubesClub.Api.Modules.Community;
 public sealed class CommunityService(ClubDb db, Caller caller, CatalogQueries catalog)
 {
     private IQueryable<Trainer> Accessible() => db.Set<Trainer>().Where(trainer => trainer.Active &&
-        catalog.EligibleEvents().Any() &&
         db.Set<ClubEvent>().Any(e => e.TrainerId == trainer.Id && e.Published && !e.Cancelled));
 
     public async Task<TrainerPage> List(bool? followingOnly, string? cursor, int? limit, CancellationToken ct)
     {
-        var eligible = catalog.EligibleEvents();
-        if (!await eligible.AnyAsync(ct)) throw ApiFault.Forbidden();
         var trainers = Accessible();
         if (followingOnly == true)
             trainers = trainers.Where(t => db.Set<Follow>().Any(f => f.TrainerId == t.Id && f.MemberId == caller.MemberId));
@@ -27,8 +24,6 @@ public sealed class CommunityService(ClubDb db, Caller caller, CatalogQueries ca
 
     public async Task<ClubFeed> Feed(CancellationToken ct)
     {
-        if (!await catalog.EligibleEvents().AnyAsync(ct)) throw ApiFault.Forbidden();
-
         var followed = await db.Set<Follow>().Where(f => f.MemberId == caller.MemberId)
             .Select(f => f.TrainerId).ToListAsync(ct);
         var linked = await db.Set<TrainerLink>().Where(l => l.MemberId == caller.MemberId)
@@ -38,7 +33,11 @@ public sealed class CommunityService(ClubDb db, Caller caller, CatalogQueries ca
         var cards = await catalog.Trainers(Accessible().Where(t => wanted.Contains(t.Id)).OrderBy(t => t.Id)).ToListAsync(ct);
         var trainers = cards.Select(card => new FeedTrainer(card,
             followed.Contains(card.Id) && linked.Contains(card.Id) ? "both" : followed.Contains(card.Id) ? "following" : "linked")).ToArray();
-        var ids = cards.Select(c => c.Id).ToList();
+        // Takip edilen veya bağlı PT yoksa akış tüm PT'lerin etkinliklerinden oluşur.
+        var sources = cards.Count > 0
+            ? cards
+            : await catalog.Trainers(Accessible().OrderBy(t => t.Id)).ToListAsync(ct);
+        var ids = sources.Select(c => c.Id).ToList();
         if (ids.Count == 0) return new ClubFeed(trainers, [], []);
 
         var owners = await db.Set<ClubEvent>().Where(e => ids.Contains(e.TrainerId))
@@ -49,7 +48,7 @@ public sealed class CommunityService(ClubDb db, Caller caller, CatalogQueries ca
         var rated = await catalog.Cards(versions.Where(v => v.Ends <= now &&
             db.Set<RatingRow>().Any(r => r.EventId == v.EventId && r.Moderation == "published"))).ToListAsync(ct);
 
-        var byId = cards.ToDictionary(c => c.Id);
+        var byId = sources.ToDictionary(c => c.Id);
         FeedEvent Wrap(EventCard e)
         {
             var trainer = byId[owners[e.Id]];

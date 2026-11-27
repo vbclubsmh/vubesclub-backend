@@ -293,6 +293,7 @@ internal static class PostgreSqlAcceptance
         Checks.Require((await Feed()).Trainers.Any(t => t.Trainer.Id == trainer && t.Source == "linked"), "A Studio link alone must show the trainer.");
         await db.Set<TrainerLink>().Where(l => l.MemberId == profile.MemberId && l.TrainerId == trainer).ExecuteDeleteAsync();
         Checks.Require((await Feed()).Trainers.All(t => t.Trainer.Id != trainer), "Feed kept an unlinked, unfollowed trainer.");
+        Checks.Require((await Feed()).ForYou.Count > 0, "A member without trainers must still see the Club events.");
         var introduction = (await server.Send("PUT", Api + "/me/trainer-introductions/" + trainer, bearer: token)).Expect(HttpStatusCode.OK).Read<Introduction>();
         var replay = (await server.Send("PUT", Api + "/me/trainer-introductions/" + trainer, bearer: token)).Expect(HttpStatusCode.OK).Read<Introduction>();
         Checks.Require(introduction == replay, "Introduction retry duplicated the request.");
