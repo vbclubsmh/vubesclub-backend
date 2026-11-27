@@ -110,6 +110,7 @@ public sealed class CatalogQueries(ClubDb db, Caller caller, TimeProvider clock)
             card.Phase == "inProgress" && await EligibleEvents().AnyAsync(x => x.Id == eventId, ct),
             await CanRate(eventId, ct), ownRating);
         return new EventDetail(card, v.Revision, extras, trainer, program, v.Preparation,
-            new MeetingPoint(v.Meeting, v.Directions, card.Position), v.Transport, v.Lodging, viewer);
+            new MeetingPoint(v.Meeting, v.Directions, card.Position), v.Transport, v.Lodging,
+            v.Gallery.Select(url => new Media(url, null)).ToArray(), viewer);
     }
 }

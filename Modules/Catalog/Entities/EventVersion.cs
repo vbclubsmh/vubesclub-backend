@@ -14,6 +14,7 @@ public sealed class EventVersion
     public Guid SportId { get; set; }
     public required string Level { get; set; }
     public string? Cover { get; set; }
+    public string[] Gallery { get; set; } = [];
     public int? DistanceMeters { get; set; }
     public long Amount { get; set; }
     public required string Currency { get; set; }

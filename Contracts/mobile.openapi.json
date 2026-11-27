@@ -3692,6 +3692,12 @@
               }
             ]
           },
+          "gallery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Media"
+            }
+          },
           "viewer": {
             "$ref": "#/components/schemas/Viewer"
           }
@@ -3706,6 +3712,7 @@
           "meetingPoint",
           "transportNotes",
           "accommodation",
+          "gallery",
           "viewer"
         ],
         "additionalProperties": false

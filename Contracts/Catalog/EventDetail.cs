@@ -10,4 +10,5 @@ public sealed record EventDetail(
     MeetingPoint MeetingPoint,
     string? TransportNotes,
     string? Accommodation,
+    IReadOnlyList<Media> Gallery,
     Viewer Viewer);
