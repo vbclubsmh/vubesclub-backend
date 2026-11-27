@@ -8,6 +8,7 @@ public sealed class ClubEvent
     public Guid? CurrentVersionId { get; set; }
     public bool Published { get; set; }
     public bool Cancelled { get; set; }
+    public bool Featured { get; set; }
     public int Capacity { get; set; }
     public int MinimumConfirmed { get; set; }
     public DateTime Opens { get; set; }

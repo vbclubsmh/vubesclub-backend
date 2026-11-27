@@ -3361,6 +3361,9 @@
                 "type": "null"
               }
             ]
+          },
+          "featured": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3378,7 +3381,8 @@
           "phase",
           "position",
           "isSaved",
-          "rating"
+          "rating",
+          "featured"
         ],
         "additionalProperties": false,
         "description": "position katalog koordinatıdır. timeZone IANA saat dilimidir."

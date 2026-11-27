@@ -47,7 +47,8 @@ public sealed class CatalogQueries(ClubDb db, Caller caller, TimeProvider clock)
                    db.Set<SavedEvent>().Any(sv => sv.EventId == e.Id && sv.MemberId == caller.MemberId),
                    version.Ends <= now ? new RatingSummary(
                        publishedRatings.Where(r => r.EventId == e.Id).Average(r => (double?)r.Stars),
-                       publishedRatings.Count(r => r.EventId == e.Id)) : null);
+                       publishedRatings.Count(r => r.EventId == e.Id)) : null,
+                   e.Featured);
     }
 
     public IQueryable<EventVersion> PublishedVersions() =>

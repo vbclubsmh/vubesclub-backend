@@ -15,4 +15,5 @@ public sealed record EventCard(
     string Phase,
     Point? Position,
     bool IsSaved,
-    RatingSummary? Rating);
+    RatingSummary? Rating,
+    bool Featured);
