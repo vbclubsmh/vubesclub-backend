@@ -3791,6 +3791,9 @@
           },
           "viewer": {
             "$ref": "#/components/schemas/Viewer"
+          },
+          "seats": {
+            "$ref": "#/components/schemas/EventSeats"
           }
         },
         "required": [
@@ -3804,7 +3807,31 @@
           "transportNotes",
           "accommodation",
           "gallery",
-          "viewer"
+          "viewer",
+          "seats"
+        ],
+        "additionalProperties": false
+      },
+      "EventSeats": {
+        "type": "object",
+        "properties": {
+          "capacity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "taken": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "capacity",
+          "taken",
+          "remaining"
         ],
         "additionalProperties": false
       },

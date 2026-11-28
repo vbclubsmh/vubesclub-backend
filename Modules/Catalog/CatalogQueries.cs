@@ -71,6 +71,12 @@ public sealed class CatalogQueries(ClubDb db, Caller caller, TimeProvider clock)
             && b.Status == "confirmed" && b.Attendance == "attended"
             && db.Set<EventVersion>().Any(v => v.Id == b.VersionId && v.Ends <= Now), ct);
 
+    private async Task<EventSeats> Seats(ClubEvent e, DateTime now, CancellationToken ct)
+    {
+        var taken = await Booking.BookingService.Occupied(db, e.Id, now, Guid.Empty, ct);
+        return new EventSeats(e.Capacity, taken, Math.Max(0, e.Capacity - taken));
+    }
+
     public async Task<EventDetail> Detail(Guid eventId, Guid? bookingId, CancellationToken ct)
     {
         var e = await db.Set<ClubEvent>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == eventId, ct)
@@ -112,6 +118,7 @@ public sealed class CatalogQueries(ClubDb db, Caller caller, TimeProvider clock)
             await CanRate(eventId, ct), ownRating);
         return new EventDetail(card, v.Revision, extras, trainer, program, v.Preparation,
             new MeetingPoint(v.Meeting, v.Directions, card.Position), v.Transport, v.Lodging,
-            v.Gallery.Select(url => new Media(url, null)).ToArray(), viewer);
+            v.Gallery.Select(url => new Media(url, null)).ToArray(), viewer,
+            await Seats(e, now, ct));
     }
 }

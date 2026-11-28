@@ -128,6 +128,7 @@ internal static class PostgreSqlAcceptance
         var details = (await server.Send("GET", Api + "/events/" + version.EventId, bearer: token)).Expect(HttpStatusCode.OK).Read<EventDetail>();
         var list = (await server.Send("GET", Api + "/events?limit=100", bearer: token)).Expect(HttpStatusCode.OK).Read<EventPage>();
         Checks.Require(details.Event.Title == updatedTitle && list.Items.Any(c => c.Id == version.EventId && c.Title == updatedTitle), "SQL change was not reflected in both endpoints.");
+        Checks.Require(details.Seats == new EventSeats(1, 0, 1), "A fresh event must report all its seats free.");
         Checks.Passed("database title change appears in catalog and event detail via HTTP");
 
         var tokens = new[] { token, applicant.Tokens.AccessToken };
@@ -157,6 +158,8 @@ internal static class PostgreSqlAcceptance
         (await server.Send("GET", passPath, bearer: tokens[1 - winner])).Expect(HttpStatusCode.NotFound);
         var bookings = (await server.Send("GET", Api + "/me/bookings?bucket=upcoming", bearer: winningToken)).Expect(HttpStatusCode.OK).Read<BookingPage>();
         Checks.Require(bookings.Items.Count(b => b.Id == pass.BookingId) == 1, "Expected exactly one confirmed booking.");
+        var fullDetails = (await server.Send("GET", Api + "/events/" + version.EventId, bearer: token)).Expect(HttpStatusCode.OK).Read<EventDetail>();
+        Checks.Require(fullDetails.Seats == new EventSeats(1, 1, 0), "A confirmed booking must use the last seat.");
         Checks.Passed("concurrent last seat, reservation and payment replay, repeated webhook, booking and owner-only pass");
 
         var checkInPath = Api + "/field/check-ins";

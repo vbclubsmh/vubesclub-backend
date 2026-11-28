@@ -11,4 +11,5 @@ public sealed record EventDetail(
     string? TransportNotes,
     string? Accommodation,
     IReadOnlyList<Media> Gallery,
-    Viewer Viewer);
+    Viewer Viewer,
+    EventSeats Seats);
